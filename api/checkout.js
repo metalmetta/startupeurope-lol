@@ -1,4 +1,4 @@
-// POST /api/checkout { name, category, amount } -> { url }
+// POST /api/checkout { name, category, desc, amount } -> { url }
 // Creates a Stripe Checkout Session for a bid and returns the redirect URL.
 // The leaderboard rank itself is only ever granted once Stripe confirms
 // payment (see api/leaderboard.js, which reads completed sessions directly).
@@ -35,10 +35,11 @@ module.exports = async (req, res) => {
     const body = req.body || {};
     const name = String(body.name || "").trim().slice(0, 80);
     const category = CATEGORIES.includes(body.category) ? body.category : "Other";
+    const desc = String(body.desc || "").trim().slice(0, 140);
     const amount = Math.round(Number(body.amount));
 
     if (!name) {
-      res.status(400).json({ error: "Enter a URL or @handle." });
+      res.status(400).json({ error: "Enter a URL." });
       return;
     }
     if (!amount || amount < MIN_BID) {
@@ -63,13 +64,13 @@ module.exports = async (req, res) => {
             unit_amount: amount * 100,
             product_data: {
               name: `milanocity.lol — bid for ${name}`,
-              description: `Claim your rank on milanocity.lol (${category})`,
+              description: desc || `Claim your rank on milanocity.lol (${category})`,
             },
           },
           quantity: 1,
         },
       ],
-      metadata: { milano_name: name, milano_category: category },
+      metadata: { milano_name: name, milano_category: category, milano_desc: desc },
       success_url: `${origin}/?paid=1&name=${encodeURIComponent(name)}`,
       cancel_url: `${origin}/?canceled=1`,
     });

@@ -41,9 +41,31 @@
     return GRADIENTS[h % GRADIENTS.length];
   }
 
+  function domainFor(name) {
+    if (!name) return null;
+    const trimmed = name.trim();
+    if (trimmed.startsWith("@")) return null;
+    const host = trimmed.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+    return host.includes(".") ? host : null;
+  }
+
+  function faviconURL(name) {
+    const domain = domainFor(name);
+    return domain ? `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(domain)}` : null;
+  }
+
   function avatarHTML(name, size) {
     const [c1, c2] = gradientFor(name);
-    return `<div class="avatar" style="--seed1:${c1};--seed2:${c2}; width:${size}px; height:${size}px; font-size:${size * 0.4}px">${initials(name)}</div>`;
+    const fallback = `<div class="avatar" style="--seed1:${c1};--seed2:${c2}; width:${size}px; height:${size}px; font-size:${size * 0.4}px; position:absolute; inset:0;">${initials(name)}</div>`;
+    const favicon = faviconURL(name);
+    if (!favicon) return `<div style="width:${size}px;height:${size}px" class="shrink-0 relative">${fallback}</div>`;
+    return `<div style="width:${size}px;height:${size}px" class="shrink-0 relative">
+      ${fallback}
+      <img src="${favicon}" width="${size}" height="${size}" alt=""
+        class="relative rounded-full object-cover bg-white"
+        style="width:${size}px;height:${size}px"
+        onerror="this.remove()">
+    </div>`;
   }
 
   function escapeHTML(s) {
@@ -159,6 +181,7 @@
             <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
             <span class="font-mono font-semibold text-sm md:text-base shrink-0">€${l.price.toLocaleString()}</span>
           </div>
+          ${l.desc ? `<div class="text-xs md:text-sm truncate" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
           <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
             <span class="rounded-full px-1.5 py-0.5 font-medium" style="background:var(--muted)">${escapeHTML(l.category)}</span>
             <span>·</span><span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
@@ -172,9 +195,11 @@
 
     el.querySelectorAll("[data-outbid]").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.getElementById("input-url").value = btn.getAttribute("data-outbid");
+        const urlInput = document.getElementById("input-url");
+        urlInput.value = btn.getAttribute("data-outbid");
+        urlInput.dispatchEvent(new Event("input"));
         document.getElementById("input-amount").value = btn.getAttribute("data-price");
-        document.getElementById("input-url").focus();
+        urlInput.focus();
         document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
       });
     });
@@ -209,6 +234,61 @@
     }
   }
 
+  // Live preview: as the user types a URL, fetch its favicon (client-side,
+  // via Google's favicon service — no backend needed) and a one-line
+  // description (server-side, via /api/preview — arbitrary sites don't send
+  // CORS headers a browser fetch could read). The fetched description rides
+  // along with the bid and lands in Stripe metadata / the leaderboard card.
+  let fetchedDesc = "";
+  let previewController = null;
+  let previewDebounce = null;
+
+  function renderPreview(state, favicon, text) {
+    const box = document.getElementById("url-preview");
+    if (state === "idle") {
+      box.classList.add("hidden");
+      box.classList.remove("flex");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.remove("hidden");
+    box.classList.add("flex");
+    if (state === "loading") {
+      box.innerHTML = `<span>Fetching preview…</span>`;
+      return;
+    }
+    const img = favicon
+      ? `<img src="${favicon}" width="16" height="16" class="rounded-sm shrink-0" onerror="this.remove()">`
+      : "";
+    box.innerHTML = `${img}<span class="truncate">${text ? escapeHTML(text) : "No description found — leaderboard card will show the URL only."}</span>`;
+  }
+
+  document.getElementById("input-url").addEventListener("input", function () {
+    const raw = this.value.trim();
+    clearTimeout(previewDebounce);
+    fetchedDesc = "";
+    if (previewController) previewController.abort();
+
+    const domain = domainFor(raw);
+    if (!domain) {
+      renderPreview("idle");
+      return;
+    }
+
+    previewDebounce = setTimeout(async () => {
+      renderPreview("loading");
+      previewController = new AbortController();
+      try {
+        const res = await fetch(`/api/preview?url=${encodeURIComponent(raw)}`, { signal: previewController.signal });
+        const data = await res.json();
+        fetchedDesc = (data.description || "").trim();
+        renderPreview("done", faviconURL(raw), fetchedDesc);
+      } catch (err) {
+        if (err.name !== "AbortError") renderPreview("done", faviconURL(raw), "");
+      }
+    }, 600);
+  });
+
   document.getElementById("bid-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     const urlInput = document.getElementById("input-url");
@@ -222,7 +302,7 @@
     const category = categoryInput.value;
     const amount = parseInt(amountInput.value, 10);
 
-    if (!name) return showError("Enter a URL or @handle.");
+    if (!name) return showError("Enter a URL.");
     if (!category) return showError("Pick a category.");
     if (!amount || amount < 5) return showError("Minimum bid is €5.");
 
@@ -233,7 +313,7 @@
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, category, amount }),
+        body: JSON.stringify({ name, category, desc: fetchedDesc, amount }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {

@@ -128,35 +128,38 @@
           €<span id="target-price">5</span>
         </div>
       </div>
-      <form id="bid-form" class="flex flex-col gap-2 md:flex-row md:items-center">
-        <input id="input-url" required type="text" placeholder="yourstartup.it or @handle"
-          class="flex-[1.3] min-w-0 rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
-          style="background:var(--bg); border-color:var(--border)">
-        <select id="input-category" required
-          class="flex-[0.9] min-w-0 rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
-          style="background:var(--bg); border-color:var(--border); color:var(--fg)">
-          <option value="" disabled selected>Category</option>
-          <option value="SaaS">SaaS</option>
-          <option value="AI">AI</option>
-          <option value="Fintech">Fintech</option>
-          <option value="E-commerce">E-commerce</option>
-          <option value="Marketplace">Marketplace</option>
-          <option value="DevTools">DevTools</option>
-          <option value="Consumer">Consumer</option>
-          <option value="Other">Other</option>
-        </select>
-        <div class="flex items-center rounded-full border px-4 py-3 gap-1 shrink-0 md:w-36" style="background:var(--bg); border-color:var(--border)">
-          <span style="color:var(--muted-fg)">€</span>
-          <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount"
-            class="w-full bg-transparent outline-none text-sm tabular-nums">
+      <form id="bid-form" class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center">
+          <input id="input-url" required type="text" placeholder="yourstartup.it"
+            class="flex-[1.3] min-w-0 rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+            style="background:var(--bg); border-color:var(--border)">
+          <select id="input-category" required
+            class="flex-[0.9] min-w-0 rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+            style="background:var(--bg); border-color:var(--border); color:var(--fg)">
+            <option value="" disabled selected>Category</option>
+            <option value="SaaS">SaaS</option>
+            <option value="AI">AI</option>
+            <option value="Fintech">Fintech</option>
+            <option value="E-commerce">E-commerce</option>
+            <option value="Marketplace">Marketplace</option>
+            <option value="DevTools">DevTools</option>
+            <option value="Consumer">Consumer</option>
+            <option value="Other">Other</option>
+          </select>
+          <div class="flex items-center rounded-full border px-4 py-3 gap-1 shrink-0 md:w-36" style="background:var(--bg); border-color:var(--border)">
+            <span style="color:var(--muted-fg)">€</span>
+            <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount"
+              class="w-full bg-transparent outline-none text-sm tabular-nums">
+          </div>
+          <button type="submit" id="submit-btn" class="shrink-0 rounded-full bg-primary text-primary-foreground font-bold text-sm px-6 py-3 h-[46px] hover:bg-primary/85 active:translate-y-px transition-all">
+            Outbid
+          </button>
         </div>
-        <button type="submit" id="submit-btn" class="shrink-0 rounded-full bg-primary text-primary-foreground font-bold text-sm px-6 py-3 h-[46px] hover:bg-primary/85 active:translate-y-px transition-all">
-          Outbid
-        </button>
+        <div id="url-preview" class="hidden items-center gap-2 px-2 text-xs" style="color:var(--muted-fg)"></div>
       </form>
       <p class="text-xs text-center mt-3" style="color:var(--muted-fg)">
         New spots start at €5. Paying less than the #1 price still puts you on the board at whatever place that bid can take.
-        Already on the list? Enter the same URL or @handle and top up your bid. Payments are processed securely by Stripe.
+        Already on the list? Enter the same URL and top up your bid. Payments are processed securely by Stripe.
       </p>
       <p id="form-error" class="text-xs text-center text-red-500 hidden mt-1"></p>
     </div>
@@ -197,7 +200,7 @@
       <li>Minimum bid is €5, charged via Stripe Checkout.</li>
       <li>To reach #1 you must bid more than the current #1.</li>
       <li>Lower bids still claim whatever rank they can outrank.</li>
-      <li>Re-enter the same URL/handle to top up your own bid — amounts accumulate.</li>
+      <li>Re-enter the same URL to top up your own bid — amounts accumulate.</li>
       <li>Be reasonable — this is a community leaderboard, not a real marketplace.</li>
     </ul>
   </div>

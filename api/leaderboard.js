@@ -1,7 +1,7 @@
 // GET /api/leaderboard
 // Builds the leaderboard by reading completed Stripe Checkout Sessions.
 // Stripe is the source of truth — no separate database. Each paid session
-// carries the bidder's name/handle in metadata; repeat bids for the same
+// carries the bidder's URL in metadata; repeat bids for the same
 // name accumulate (topping up moves you further up the board).
 
 const Stripe = require("stripe");
@@ -49,6 +49,7 @@ module.exports = async (req, res) => {
         if (!name) continue;
 
         const category = (s.metadata && s.metadata.milano_category) || "Other";
+        const desc = (s.metadata && s.metadata.milano_desc) || "";
         const amount = (s.amount_total || 0) / 100;
         const ts = s.created * 1000;
         const key = name.toLowerCase();
@@ -56,10 +57,13 @@ module.exports = async (req, res) => {
         const existing = byName.get(key);
         if (existing) {
           existing.price += amount;
-          if (ts >= existing.ts) existing.category = category;
+          if (ts >= existing.ts) {
+            existing.category = category;
+            if (desc) existing.desc = desc;
+          }
           existing.ts = Math.max(existing.ts, ts);
         } else {
-          byName.set(key, { id: key, name, category, price: amount, ts });
+          byName.set(key, { id: key, name, category, desc, price: amount, ts });
         }
 
         activity.push({ name, price: amount, ts });
