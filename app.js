@@ -438,12 +438,16 @@
     applyTheme(root.classList.contains("dark") ? "light" : "dark");
   });
 
-  // handle redirect back from Stripe
+  // handle redirect back from Stripe (or the cheat-code path, which
+  // redirects the same way but skips Stripe — see api/checkout.js)
   (function handleRedirect() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("paid") === "1") {
       const name = params.get("name") || "your bid";
-      showBanner(`✅ Payment received for ${name}! It can take a few seconds to appear on the board.`, "success");
+      const msg = params.get("comped") === "1"
+        ? `✅ ${name} added for free! It can take a few seconds to appear on the board.`
+        : `✅ Payment received for ${name}! It can take a few seconds to appear on the board.`;
+      showBanner(msg, "success");
       setTimeout(loadLeaderboard, 3000);
     } else if (params.get("canceled") === "1") {
       showBanner("Checkout canceled — no charge was made.", "info");

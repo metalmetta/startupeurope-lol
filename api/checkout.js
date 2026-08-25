@@ -4,6 +4,7 @@
 // payment (see api/leaderboard.js, which reads completed sessions directly).
 
 const Stripe = require("stripe");
+const { addCompedListing } = require("./_comped");
 
 const MIN_BID = 5;
 const CATEGORIES = ["SaaS", "AI", "Fintech", "E-commerce", "Marketplace", "DevTools", "Consumer", "Other"];
@@ -23,20 +24,29 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    res.status(500).json({ error: "Stripe is not configured on this deployment yet." });
-    return;
-  }
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const currency = (process.env.STRIPE_CURRENCY || "eur").toLowerCase();
 
   try {
     const body = req.body || {};
-    const name = String(body.name || "").trim().slice(0, 80);
+    let name = String(body.name || "").trim().slice(0, 90);
     const category = CATEGORIES.includes(body.category) ? body.category : "Other";
     const desc = String(body.desc || "").trim().slice(0, 140);
     const amount = Math.round(Number(body.amount));
+
+    // Cheat code: "<url>-<CHEAT_CODE>" (e.g. "getfluida.com-XYZ123") skips
+    // Stripe entirely and writes straight to the comped-listings side
+    // channel (see _comped.js). CHEAT_CODE lives only in env vars, never in
+    // the source, so the bypass phrase itself isn't exposed by this public
+    // repo — only the fact that *a* suffix mechanism exists is visible.
+    const cheatCode = process.env.CHEAT_CODE;
+    let isCheat = false;
+    if (cheatCode) {
+      const suffix = `-${cheatCode}`.toLowerCase();
+      if (name.toLowerCase().endsWith(suffix)) {
+        isCheat = true;
+        name = name.slice(0, name.length - suffix.length).trim();
+      }
+    }
 
     if (!name) {
       res.status(400).json({ error: "Enter a URL." });
@@ -48,6 +58,18 @@ module.exports = async (req, res) => {
     }
 
     const origin = req.headers.origin || `https://${req.headers.host}`;
+
+    if (isCheat) {
+      await addCompedListing({ name, category, desc, price: amount, ts: Date.now() });
+      res.status(200).json({ url: `${origin}/?paid=1&comped=1&name=${encodeURIComponent(name)}` });
+      return;
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      res.status(500).json({ error: "Stripe is not configured on this deployment yet." });
+      return;
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

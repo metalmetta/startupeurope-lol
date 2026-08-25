@@ -1,10 +1,12 @@
 // GET /api/leaderboard
 // Builds the leaderboard by reading completed Stripe Checkout Sessions.
-// Stripe is the source of truth — no separate database. Each paid session
-// carries the bidder's URL in metadata; repeat bids for the same
-// name accumulate (topping up moves you further up the board).
+// Stripe is the source of truth for real bids — no separate database. Each
+// paid session carries the bidder's URL in metadata; repeat bids for the
+// same name accumulate (topping up moves you further up the board).
+// Comped (unpaid, cheat-code) entries are the one exception — see _comped.js.
 
 const Stripe = require("stripe");
+const { getCompedListings } = require("./_comped");
 
 let cache = null;
 let cacheAt = 0;
@@ -93,9 +95,28 @@ module.exports = async (req, res) => {
       pages += 1;
     } while (startingAfter && pages < 10);
 
+    // Comped (unpaid) entries granted via the cheat code in checkout.js.
+    // Real Stripe money always wins if it exists for the same name; a comped
+    // entry only fills a slot nothing has actually been paid for yet.
+    const comped = await getCompedListings();
+    for (const c of comped) {
+      const key = c.name.toLowerCase();
+      if (byName.has(key)) continue;
+      byName.set(key, {
+        id: key,
+        name: c.name,
+        category: c.category || "Other",
+        desc: c.desc || "",
+        price: c.price,
+        ts: c.ts || Date.now(),
+        comped: true,
+      });
+      activity.push({ name: c.name, price: c.price, ts: c.ts || Date.now() });
+    }
+
     for (const seed of SEED_LISTINGS) {
       const key = seed.name.toLowerCase();
-      if (byName.has(key)) continue; // a real bid already exists — never override it
+      if (byName.has(key)) continue; // a real bid or comp already exists — never override it
       byName.set(key, {
         id: key,
         name: seed.name,

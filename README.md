@@ -19,6 +19,27 @@ Re-submitting the same name tops up your existing bid.
     into ranked listings (repeat bids for the same name sum together).
   - `api/webhook.js` — verifies and logs `checkout.session.completed`
     events (optional today, but the place to hook in receipts/notifications).
+  - `api/_comped.js` — not a route (leading `_`). Shared helper for the
+    cheat-code side channel below, backed by Vercel Blob.
+
+### Cheat code (free/comped entries)
+
+Setting `CHEAT_CODE` turns on a hidden bypass: submitting a URL with
+`-<CHEAT_CODE>` appended (e.g. `getfluida.com-xyz123`) skips Stripe entirely
+and grants that entry for free, at whatever amount was entered. It's meant
+for an operator to comp their own product, a partner, or a giveaway —
+not something advertised in the UI.
+
+**This is not a secret mechanism** — the suffix-matching logic lives in this
+public repo, so anyone who reads `api/checkout.js` can see *that* a bypass
+exists. What stays private is the actual `CHEAT_CODE` value, since it's only
+ever read from an environment variable and never committed. Treat it like a
+password: pick something unguessable, keep it out of git, and rotate it in
+Vercel's dashboard if it ever leaks.
+
+Comped entries are stored in Vercel Blob (not Stripe), merged into the
+leaderboard behind real bids — if someone later pays for the same URL for
+real, their payment takes over the entry.
 
 ## Setup
 
@@ -28,9 +49,13 @@ Re-submitting the same name tops up your existing bid.
      webhook endpoint you create in the Stripe Dashboard pointing at
      `https://<your-domain>/api/webhook` (event: `checkout.session.completed`).
    - `STRIPE_CURRENCY` — defaults to `eur`.
+   - `BLOB_READ_WRITE_TOKEN` (optional) — create a Blob store in the Vercel
+     dashboard (Storage tab) and link it to this project to enable it.
+   - `CHEAT_CODE` (optional) — enables the free-entry bypass above.
 2. In Vercel: **Project Settings → Environment Variables**, add the same
-   three keys before deploying (or `vercel env add`).
-3. `npm install` (installs the `stripe` package used by the API functions).
+   keys before deploying (or `vercel env add`).
+3. `npm install` (installs `stripe` and `@vercel/blob`, used by the API
+   functions).
 
 ## Local dev
 
