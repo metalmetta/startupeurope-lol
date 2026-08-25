@@ -13,7 +13,6 @@
   let listings = [];
   let activity = [];
   let showAll = false;
-  let visitorBase = 0;
 
   function timeAgo(ts) {
     const diff = Math.max(0, Date.now() - ts);
@@ -249,15 +248,6 @@
     }
   })();
 
-  // ambient simulation: cosmetic only, doesn't affect the leaderboard
-  visitorBase = 40000 + Math.floor(Math.random() * 5000);
-  document.getElementById("visitor-count").textContent = visitorBase.toLocaleString();
-  setInterval(() => {
-    const el = document.getElementById("online-count");
-    if (el) el.textContent = (260 + Math.floor(Math.random() * 90)).toString();
-    visitorBase += Math.floor(Math.random() * 3);
-    document.getElementById("visitor-count").textContent = visitorBase.toLocaleString();
-  }, 4000);
 
   loadLeaderboard();
   setInterval(loadLeaderboard, 8000);
