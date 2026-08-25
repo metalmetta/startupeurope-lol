@@ -63,14 +63,17 @@ module.exports = async (req, res) => {
             currency,
             unit_amount: amount * 100,
             product_data: {
-              name: `milanocity.lol — bid for ${name}`,
-              description: desc || `Claim your rank on milanocity.lol (${category})`,
+              name: `startupeurope.lol — bid for ${name}`,
+              description: desc || `Claim your rank on startupeurope.lol (${category})`,
             },
           },
           quantity: 1,
         },
       ],
-      metadata: { milano_name: name, milano_category: category, milano_desc: desc },
+      // se_* metadata — renamed from milano_* when the project moved from
+      // milanocity.lol to startupeurope.lol. leaderboard.js still reads the
+      // old milano_* keys too, so bids placed before the rename keep counting.
+      metadata: { se_name: name, se_category: category, se_desc: desc },
       success_url: `${origin}/?paid=1&name=${encodeURIComponent(name)}`,
       cancel_url: `${origin}/?canceled=1`,
     });

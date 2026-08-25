@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
     const resp = await fetch(target.toString(), {
       redirect: "follow",
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; milanocitybot/1.0; +https://milanocity.lol)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; startupeuropebot/1.0; +https://startupeurope.lol)" },
     });
     clearTimeout(timeout);
 

@@ -15,16 +15,16 @@ const CACHE_MS = 4000;
 // instant a real bid comes in for the same URL, it fully replaces the seed
 // (see the merge below), so a seed can never block or absorb real money.
 const SEED_LISTINGS = [
-  { name: "nova.ai", category: "AI", desc: "AI copilots for Italian PMIs — invoices, contracts, and customer replies, drafted automatically.", price: 420, hoursAgo: 3, clicks: 812, favicon: "/logos/nova-ai.svg" },
-  { name: "borsapay.it", category: "Fintech", desc: "Instant B2B payments and invoice financing for small Italian suppliers.", price: 380, hoursAgo: 5, clicks: 664, favicon: "/logos/borsapay-it.svg" },
-  { name: "tavolo.app", category: "Consumer", desc: "Book the table, order, and split the bill — one app for every ristorante in town.", price: 310, hoursAgo: 2, clicks: 591, favicon: "/logos/tavolo-app.svg" },
-  { name: "fashionloop.it", category: "E-commerce", desc: "Resell and rent pre-loved Italian designer fashion, authenticated in 24h.", price: 275, hoursAgo: 8, clicks: 503, favicon: "/logos/fashionloop-it.svg" },
-  { name: "buildstack.dev", category: "DevTools", desc: "One-click infra for Italian startups — deploy, monitor, and scale without a DevOps hire.", price: 240, hoursAgo: 6, clicks: 447, favicon: "/logos/buildstack-dev.svg" },
-  { name: "ventomarket.it", category: "Marketplace", desc: "Local marketplace connecting small Italian producers directly with restaurants.", price: 190, hoursAgo: 12, clicks: 388, favicon: "/logos/ventomarket-it.svg" },
-  { name: "cloudpanel.io", category: "SaaS", desc: "The all-in-one back office for Italian freelancers — invoicing, taxes, and clients.", price: 150, hoursAgo: 4, clicks: 305, favicon: "/logos/cloudpanel-io.svg" },
+  { name: "nova.ai", category: "AI", desc: "AI copilots for European SMEs — invoices, contracts, and customer replies, drafted automatically.", price: 420, hoursAgo: 3, clicks: 812, favicon: "/logos/nova-ai.svg" },
+  { name: "borsapay.it", category: "Fintech", desc: "Instant B2B payments and invoice financing for small European suppliers.", price: 380, hoursAgo: 5, clicks: 664, favicon: "/logos/borsapay-it.svg" },
+  { name: "tavolo.app", category: "Consumer", desc: "Book the table, order, and split the bill — one app for restaurants across Europe.", price: 310, hoursAgo: 2, clicks: 591, favicon: "/logos/tavolo-app.svg" },
+  { name: "fashionloop.it", category: "E-commerce", desc: "Resell and rent pre-loved European designer fashion, authenticated in 24h.", price: 275, hoursAgo: 8, clicks: 503, favicon: "/logos/fashionloop-it.svg" },
+  { name: "buildstack.dev", category: "DevTools", desc: "One-click infra for European startups — deploy, monitor, and scale without a DevOps hire.", price: 240, hoursAgo: 6, clicks: 447, favicon: "/logos/buildstack-dev.svg" },
+  { name: "ventomarket.it", category: "Marketplace", desc: "Local marketplace connecting small European producers directly with restaurants.", price: 190, hoursAgo: 12, clicks: 388, favicon: "/logos/ventomarket-it.svg" },
+  { name: "cloudpanel.io", category: "SaaS", desc: "The all-in-one back office for European freelancers — invoicing, taxes, and clients.", price: 150, hoursAgo: 4, clicks: 305, favicon: "/logos/cloudpanel-io.svg" },
   { name: "spesaexpress.it", category: "E-commerce", desc: "30-minute grocery delivery from your neighborhood's own shops.", price: 120, hoursAgo: 15, clicks: 261, favicon: "/logos/spesaexpress-it.svg" },
-  { name: "lexbot.ai", category: "AI", desc: "AI paralegal for Italian law firms — contract review in minutes, not days.", price: 95, hoursAgo: 9, clicks: 198, favicon: "/logos/lexbot-ai.svg" },
-  { name: "pagofacile.it", category: "Fintech", desc: "Tap-to-pay for Italian market stalls and street vendors — no terminal needed.", price: 60, hoursAgo: 20, clicks: 142, favicon: "/logos/pagofacile-it.svg" },
+  { name: "lexbot.ai", category: "AI", desc: "AI paralegal for European law firms — contract review in minutes, not days.", price: 95, hoursAgo: 9, clicks: 198, favicon: "/logos/lexbot-ai.svg" },
+  { name: "pagofacile.it", category: "Fintech", desc: "Tap-to-pay for European market stalls and street vendors — no terminal needed.", price: 60, hoursAgo: 20, clicks: 142, favicon: "/logos/pagofacile-it.svg" },
 ];
 
 module.exports = async (req, res) => {
@@ -62,11 +62,14 @@ module.exports = async (req, res) => {
 
       for (const s of page.data) {
         if (s.payment_status !== "paid") continue;
-        const name = s.metadata && s.metadata.milano_name;
+        // se_* is current; milano_* covers bids placed before the project
+        // was renamed from milanocity.lol to startupeurope.lol.
+        const meta = s.metadata || {};
+        const name = meta.se_name || meta.milano_name;
         if (!name) continue;
 
-        const category = (s.metadata && s.metadata.milano_category) || "Other";
-        const desc = (s.metadata && s.metadata.milano_desc) || "";
+        const category = meta.se_category || meta.milano_category || "Other";
+        const desc = meta.se_desc || meta.milano_desc || "";
         const amount = (s.amount_total || 0) / 100;
         const ts = s.created * 1000;
         const key = name.toLowerCase();

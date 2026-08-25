@@ -1,8 +1,8 @@
 {
-  "name": "milanocity-lol",
+  "name": "startupeurope-lol",
   "private": true,
   "version": "1.0.0",
-  "description": "milanocity.lol — pay-to-rank leaderboard for Italian startups, backed by Stripe Checkout.",
+  "description": "startupeurope.lol — pay-to-rank leaderboard for European startups, backed by Stripe Checkout.",
   "dependencies": {
     "stripe": "^17.4.0"
   }

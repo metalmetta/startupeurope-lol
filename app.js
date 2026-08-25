@@ -1,4 +1,4 @@
-// milanocity.lol — frontend. The leaderboard is read live from /api/leaderboard
+// startupeurope.lol — frontend. The leaderboard is read live from /api/leaderboard
 // (which itself reads completed Stripe Checkout Sessions — no local fake state).
 // Bidding redirects to a real Stripe Checkout session via /api/checkout.
 (function () {
@@ -230,7 +230,7 @@
         subEl.textContent = "Be the first in this category — bid above claims #1.";
       } else {
         titleEl.textContent = "No one has claimed a spot yet.";
-        subEl.textContent = "Be the first Italian startup on the board — bid above claims #1.";
+        subEl.textContent = "Be the first European startup on the board — bid above claims #1.";
       }
       return;
     }
@@ -430,9 +430,9 @@
   const root = document.documentElement;
   function applyTheme(mode) {
     if (mode === "dark") root.classList.add("dark"); else root.classList.remove("dark");
-    localStorage.setItem("milanocity_theme", mode);
+    localStorage.setItem("startupeurope_theme", mode);
   }
-  const savedTheme = localStorage.getItem("milanocity_theme") || "dark";
+  const savedTheme = localStorage.getItem("startupeurope_theme") || "dark";
   applyTheme(savedTheme);
   document.getElementById("theme-toggle").addEventListener("click", () => {
     applyTheme(root.classList.contains("dark") ? "light" : "dark");

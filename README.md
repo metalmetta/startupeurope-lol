@@ -1,6 +1,6 @@
-# milanocity.lol
+# startupeurope.lol
 
-A pay-to-rank public leaderboard for Italian startups — inspired by
+A pay-to-rank public leaderboard for European startups — inspired by
 [outbid.lol](https://outbid.lol), not affiliated with it.
 
 Anyone submits a URL/handle and bids in euros. Paying more than the current

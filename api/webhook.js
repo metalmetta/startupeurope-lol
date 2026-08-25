@@ -33,7 +33,8 @@ module.exports = async (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const s = event.data.object;
-    console.log("Bid paid:", s.metadata && s.metadata.milano_name, s.amount_total / 100);
+    const meta = s.metadata || {};
+    console.log("Bid paid:", meta.se_name || meta.milano_name, s.amount_total / 100);
   }
 
   res.status(200).json({ received: true });
