@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>outbid.lol — pay to rank</title>
+<meta name="description" content="Claim #1 on the public leaderboard. Anyone can outbid you at any time.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          primary: '#e8501f',
+          'primary-foreground': '#fff8f0',
+          card: 'var(--card)',
+          background: 'var(--bg)',
+          foreground: 'var(--fg)',
+          muted: 'var(--muted)',
+          'muted-foreground': 'var(--muted-fg)',
+          border: 'var(--border)',
+          live: '#16a34a',
+        },
+        fontFamily: {
+          sans: ['-apple-system','BlinkMacSystemFont','Inter','Segoe UI','Helvetica','Arial','sans-serif'],
+          mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','monospace'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --bg: #faf6f1;
+    --card: #ffffff;
+    --fg: #1c1917;
+    --muted: #f0ebe4;
+    --muted-fg: #78716c;
+    --border: #e7e0d8;
+  }
+  html.dark {
+    --bg: #171310;
+    --card: #221d18;
+    --fg: #f5f0ea;
+    --muted: #2a241e;
+    --muted-fg: #a89f95;
+    --border: #332c25;
+  }
+  body { background: var(--bg); color: var(--fg); }
+  .card-shadow { box-shadow: 0 12px 50px rgba(40,38,36,0.08); }
+  ::-webkit-scrollbar { height: 6px; width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  .avatar {
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 9999px; font-weight:700; color:#fff; flex-shrink:0;
+    background: linear-gradient(135deg, var(--seed1), var(--seed2));
+  }
+  @keyframes ping { 75%,100% { transform: scale(2); opacity: 0; } }
+  .animate-ping-slow { animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite; }
+  .rank-glow-1 { border: 2px solid #e8501f; background: rgba(232,80,31,0.10); }
+  .rank-glow-2 { border: 2px solid rgba(232,80,31,0.4); background: rgba(232,80,31,0.06); }
+  .rank-glow-3 { border: 2px solid rgba(232,80,31,0.15); background: rgba(232,80,31,0.03); }
+  .fade-in { animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to { opacity:1; transform:none; } }
+  input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin:0; }
+</style>
+</head>
+<body class="min-h-screen font-sans antialiased flex flex-col">
+
+<!-- HEADER -->
+<header class="border-b" style="border-color:var(--border)">
+  <div class="max-w-5xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between gap-4">
+    <a href="#" class="inline-flex items-center gap-1.5 font-medium tracking-tight text-[20px] shrink-0">
+      <span>outbid</span><span class="text-primary">.lol</span>
+    </a>
+    <nav class="hidden sm:flex items-center gap-5 text-sm text-muted-foreground">
+      <a href="#leaderboard" class="font-medium hover:text-foreground transition-colors" style="color:var(--fg)">Leaderboard</a>
+      <a href="#about" class="font-medium transition-colors hover:text-foreground" style="color:var(--muted-fg)">About</a>
+      <a href="#rules" class="font-medium transition-colors hover:text-foreground" style="color:var(--muted-fg)">Rules</a>
+    </nav>
+    <button id="theme-toggle" class="size-9 rounded-full flex items-center justify-center border transition-colors hover:opacity-80 shrink-0" style="border-color:var(--border)" aria-label="Toggle theme">
+      <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="flex-1">
+  <!-- HERO -->
+  <div class="max-w-5xl mx-auto px-4 md:px-6 pt-10 md:pt-14 pb-2 text-center">
+    <h1 class="flex flex-wrap items-center justify-center gap-x-2 text-[28px] md:text-[40px] font-bold tracking-[-0.03em]">
+      outbid<span class="text-primary">.lol</span>
+    </h1>
+    <div class="mt-3 flex flex-wrap items-center justify-center gap-x-2 text-sm" style="color:var(--muted-fg)">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="relative inline-flex size-2">
+          <span class="absolute inline-flex size-full animate-ping-slow rounded-full bg-live opacity-75"></span>
+          <span class="relative inline-flex size-2 rounded-full bg-live"></span>
+        </span>
+        <span id="online-count" class="font-semibold" style="color:var(--fg)">512</span> online
+      </span>
+      <span>·</span>
+      <span><span id="visitor-count" class="font-semibold" style="color:var(--fg)">1,072,388</span> visitors since launch</span>
+      <span>·</span>
+      <a href="#about" class="font-medium text-primary hover:opacity-80">see stats→</a>
+    </div>
+  </div>
+
+  <!-- BID FORM -->
+  <div class="max-w-2xl mx-auto px-4 md:px-6 mt-8 md:mt-10">
+    <div class="rounded-2xl card-shadow px-5 py-6 md:px-8 md:py-8" style="background:var(--card)">
+      <div class="mb-6 text-center">
+        <div class="text-sm mb-2" style="color:var(--muted-fg)">Claim <span id="claim-rank-label" class="font-semibold" style="color:var(--fg)">#1</span> for</div>
+        <div class="inline-flex items-baseline justify-center rounded-2xl px-5 py-3 sm:px-8 sm:py-4 card-shadow font-mono text-4xl sm:text-6xl font-semibold tabular-nums" style="background:var(--muted)">
+          $<span id="target-price">14018</span>
+        </div>
+      </div>
+      <form id="bid-form" class="flex flex-col gap-3">
+        <input id="input-url" required type="text" placeholder="yoursite.com or @handle"
+          class="w-full rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+          style="background:var(--bg); border-color:var(--border)">
+        <input id="input-desc" type="text" maxlength="140" placeholder="One-line description (optional)"
+          class="w-full rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+          style="background:var(--bg); border-color:var(--border)">
+        <div class="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+          <div class="flex-1 flex items-center rounded-full border px-4 py-3 gap-1" style="background:var(--bg); border-color:var(--border)">
+            <span style="color:var(--muted-fg)">$</span>
+            <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount in dollars"
+              class="w-full bg-transparent outline-none text-sm tabular-nums">
+          </div>
+          <button type="submit" class="shrink-0 rounded-full bg-primary text-primary-foreground font-bold text-sm px-6 py-3 h-[46px] hover:bg-primary/85 active:translate-y-px transition-all">
+            Outbid
+          </button>
+        </div>
+        <p class="text-xs text-center mt-1" style="color:var(--muted-fg)">
+          New spots start at $5. Paying less than the #1 price still puts you on the board at whatever place that bid can take.
+          Already on the list? Enter the same URL or @handle and up your bid.
+        </p>
+        <p id="form-error" class="text-xs text-center text-red-500 hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- TRENDING -->
+  <div class="max-w-5xl mx-auto px-4 md:px-6 mt-10">
+    <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">🔥 Trending right now</h2>
+    <div id="trending-row" class="flex gap-2 sm:gap-3 overflow-x-auto pb-2"></div>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div class="max-w-5xl mx-auto px-4 md:px-6 mt-8">
+    <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">Latest activity</h2>
+    <div id="activity-list" class="flex flex-col gap-2"></div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div id="leaderboard" class="max-w-5xl mx-auto px-4 md:px-6 mt-10 mb-16">
+    <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">Leaderboard</h2>
+    <div id="leaderboard-list" class="flex flex-col"></div>
+    <div class="mt-6 text-center">
+      <button id="show-more-btn" class="rounded-full px-4 py-2 text-sm font-medium" style="background:var(--muted); color:var(--muted-fg)">Show more</button>
+    </div>
+  </div>
+
+  <!-- ABOUT / RULES -->
+  <div id="about" class="max-w-2xl mx-auto px-4 md:px-6 mt-4 mb-16 text-sm" style="color:var(--muted-fg)">
+    <h3 class="font-semibold text-base mb-2" style="color:var(--fg)">About</h3>
+    <p class="mb-6">outbid.lol is a public leaderboard. Anyone can list their site, app, or profile and pay to move up. There's no subscription and no reserved spot — if someone pays more than you, they take your rank. This is a fan-made clone built for fun; it stores everything locally in your browser and doesn't process real payments.</p>
+    <h3 id="rules" class="font-semibold text-base mb-2" style="color:var(--fg)">Rules</h3>
+    <ul class="list-disc pl-5 space-y-1">
+      <li>Minimum bid is $5.</li>
+      <li>To reach #1 you must bid more than the current #1.</li>
+      <li>Lower bids still claim whatever rank they can outrank.</li>
+      <li>Re-enter the same URL/handle to top up your own bid.</li>
+      <li>Be reasonable — this is a demo, not a real marketplace.</li>
+    </ul>
+  </div>
+</main>
+
+<footer class="border-t py-6 text-center text-xs" style="border-color:var(--border); color:var(--muted-fg)">
+  <p>outbid.lol clone — built for fun, not affiliated with the original. No real money changes hands here.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
