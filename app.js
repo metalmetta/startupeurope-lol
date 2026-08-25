@@ -148,7 +148,6 @@
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline gap-2">
           <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
-          <span class="font-mono font-semibold text-sm md:text-base shrink-0">€${l.price.toLocaleString()}</span>
         </div>
         ${l.desc ? `<div class="text-xs md:text-sm truncate" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
         <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
@@ -156,9 +155,12 @@
           <span>·</span><span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
         </div>
       </div>
-      <button data-outbid="${escapeHTML(l.name)}" data-price="${Math.ceil(l.price) + 1}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
-        claim for €${(Math.ceil(l.price) + 1).toLocaleString()}
-      </button>
+      <div class="flex flex-col items-end gap-1.5 shrink-0">
+        <span class="font-mono font-semibold text-sm md:text-base rounded-full px-2.5 py-0.5" style="background:var(--muted)">€${l.price.toLocaleString()}</span>
+        <button data-outbid="${escapeHTML(l.name)}" data-price="${Math.ceil(l.price) + 1}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
+          claim for €${(Math.ceil(l.price) + 1).toLocaleString()}
+        </button>
+      </div>
     </div>`;
   }
 
@@ -348,8 +350,7 @@
     if (mode === "dark") root.classList.add("dark"); else root.classList.remove("dark");
     localStorage.setItem("milanocity_theme", mode);
   }
-  const savedTheme = localStorage.getItem("milanocity_theme")
-    || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const savedTheme = localStorage.getItem("milanocity_theme") || "dark";
   applyTheme(savedTheme);
   document.getElementById("theme-toggle").addEventListener("click", () => {
     applyTheme(root.classList.contains("dark") ? "light" : "dark");
