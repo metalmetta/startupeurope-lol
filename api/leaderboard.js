@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
         const name = s.metadata && s.metadata.milano_name;
         if (!name) continue;
 
-        const desc = (s.metadata && s.metadata.milano_desc) || "";
+        const category = (s.metadata && s.metadata.milano_category) || "Other";
         const amount = (s.amount_total || 0) / 100;
         const ts = s.created * 1000;
         const key = name.toLowerCase();
@@ -56,10 +56,10 @@ module.exports = async (req, res) => {
         const existing = byName.get(key);
         if (existing) {
           existing.price += amount;
+          if (ts >= existing.ts) existing.category = category;
           existing.ts = Math.max(existing.ts, ts);
-          if (desc) existing.desc = desc;
         } else {
-          byName.set(key, { id: key, name, desc, price: amount, ts });
+          byName.set(key, { id: key, name, category, price: amount, ts });
         }
 
         activity.push({ name, price: amount, ts });

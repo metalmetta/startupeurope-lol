@@ -10,9 +10,12 @@
     ["#b45309", "#fbbf24"], ["#be185d", "#f9a8d4"],
   ];
 
+  const CATEGORIES = ["SaaS", "AI", "Fintech", "E-commerce", "Marketplace", "DevTools", "Consumer", "Other"];
+
   let listings = [];
   let activity = [];
   let showAll = false;
+  let activeCategory = "All";
 
   function timeAgo(ts) {
     const diff = Math.max(0, Date.now() - ts);
@@ -56,7 +59,30 @@
     renderForm(list);
     renderTrending(list);
     renderActivity();
+    renderCategoryFilters(list);
     renderLeaderboard(list);
+  }
+
+  function renderCategoryFilters(list) {
+    const el = document.getElementById("category-filters");
+    const present = CATEGORIES.filter(c => list.some(l => l.category === c));
+    const tabs = ["All", ...present];
+    if (!tabs.includes(activeCategory)) activeCategory = "All";
+
+    el.innerHTML = tabs.map(c => {
+      const active = c === activeCategory;
+      return `<button data-cat="${escapeHTML(c)}" class="shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+        active ? "bg-primary text-primary-foreground" : "border hover:bg-muted"
+      }" ${active ? "" : `style="border-color:var(--border); color:var(--muted-fg)"`}>${escapeHTML(c)}</button>`;
+    }).join("");
+
+    el.querySelectorAll("[data-cat]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeCategory = btn.getAttribute("data-cat");
+        renderCategoryFilters(sorted());
+        renderLeaderboard(sorted());
+      });
+    });
   }
 
   function renderForm(list) {
@@ -96,12 +122,23 @@
     }).join("");
   }
 
-  function renderLeaderboard(list) {
+  function renderLeaderboard(fullList) {
     const el = document.getElementById("leaderboard-list");
     const emptyEl = document.getElementById("empty-state");
+
+    const list = activeCategory === "All" ? fullList : fullList.filter(l => l.category === activeCategory);
+
     if (!list.length) {
       el.innerHTML = "";
       emptyEl.classList.remove("hidden");
+      const [titleEl, subEl] = emptyEl.querySelectorAll("p");
+      if (fullList.length) {
+        titleEl.textContent = `No bids in ${escapeHTML(activeCategory)} yet.`;
+        subEl.textContent = "Be the first in this category — bid above claims #1.";
+      } else {
+        titleEl.textContent = "No one has claimed a spot yet.";
+        subEl.textContent = "Be the first Italian startup on the board — bid above claims #1.";
+      }
       return;
     }
     emptyEl.classList.add("hidden");
@@ -122,9 +159,9 @@
             <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
             <span class="font-mono font-semibold text-sm md:text-base shrink-0">€${l.price.toLocaleString()}</span>
           </div>
-          ${l.desc ? `<div class="text-xs md:text-sm line-clamp-2" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
           <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
-            <span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
+            <span class="rounded-full px-1.5 py-0.5 font-medium" style="background:var(--muted)">${escapeHTML(l.category)}</span>
+            <span>·</span><span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
           </div>
         </div>
         <button data-outbid="${escapeHTML(l.name)}" data-price="${Math.ceil(l.price) + 1}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
@@ -175,17 +212,18 @@
   document.getElementById("bid-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     const urlInput = document.getElementById("input-url");
-    const descInput = document.getElementById("input-desc");
+    const categoryInput = document.getElementById("input-category");
     const amountInput = document.getElementById("input-amount");
     const errEl = document.getElementById("form-error");
     const submitBtn = document.getElementById("submit-btn");
     errEl.classList.add("hidden");
 
     const name = urlInput.value.trim();
-    const desc = descInput.value.trim();
+    const category = categoryInput.value;
     const amount = parseInt(amountInput.value, 10);
 
     if (!name) return showError("Enter a URL or @handle.");
+    if (!category) return showError("Pick a category.");
     if (!amount || amount < 5) return showError("Minimum bid is €5.");
 
     submitBtn.disabled = true;
@@ -195,7 +233,7 @@
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, desc, amount }),
+        body: JSON.stringify({ name, category, amount }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
