@@ -49,7 +49,8 @@ module.exports = async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      // No payment_method_types: this account has Managed Payments enabled,
+      // which selects payment methods automatically and rejects that param.
       line_items: [
         {
           price_data: {
