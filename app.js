@@ -136,18 +136,31 @@
     }).join("");
   }
 
+  function siteURL(name) {
+    const domain = domainFor(name);
+    return domain ? `https://${domain}` : null;
+  }
+
   function leaderboardCardHTML(l, rank) {
     let glow = "";
     if (rank === 1) glow = "rank-glow-1";
     else if (rank === 2) glow = "rank-glow-2";
     else if (rank === 3) glow = "rank-glow-3";
+    const href = siteURL(l.name);
+    const nameTag = href
+      ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="min-w-0 truncate font-bold text-sm md:text-base hover:underline">${escapeHTML(l.name)}</a>`
+      : `<span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>`;
+    const avatar = avatarHTML(l.name, rank <= 3 ? 44 : 36, l.favicon);
+    const avatarTag = href
+      ? `<a href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(l.name)}">${avatar}</a>`
+      : avatar;
     return `
     <div class="group relative flex items-center gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-5 rounded-2xl my-1.5 ${glow}">
       <div class="w-8 md:w-10 text-center text-sm md:text-base font-medium shrink-0" style="color:var(--muted-fg)">#${rank}</div>
-      ${avatarHTML(l.name, rank <= 3 ? 44 : 36, l.favicon)}
+      ${avatarTag}
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline gap-2">
-          <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
+          ${nameTag}
         </div>
         ${l.desc ? `<div class="text-xs md:text-sm truncate" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
         <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
