@@ -211,6 +211,68 @@
   .t-category .cat-option[aria-selected="true"] {
     background: var(--muted);
   }
+
+  /* Transitions.dev — Skeleton loader and reveal */
+  :root {
+    --pulse-dur: 1000ms;
+    --pulse-count: 1;
+    --pulse-min: 0.5;
+    --reveal-dur: 400ms;
+    --reveal-blur: 2px;
+    --reveal-ease: ease-in-out;
+  }
+  .t-skel { position: relative; }
+  .t-skel-skeleton,
+  .t-skel-content {
+    position: absolute;
+    inset: 0;
+  }
+  .t-skel-skeleton {
+    z-index: 1;
+    opacity: 1;
+    filter: blur(0);
+    transition:
+      opacity var(--reveal-dur) var(--reveal-ease),
+      filter  var(--reveal-dur) var(--reveal-ease);
+  }
+  .t-skel-content {
+    z-index: 2;
+    opacity: 0;
+    filter: blur(var(--reveal-blur));
+    transition:
+      opacity var(--reveal-dur) var(--reveal-ease),
+      filter  var(--reveal-dur) var(--reveal-ease);
+  }
+  .t-skel.is-revealed .t-skel-skeleton {
+    opacity: 0;
+    filter: blur(var(--reveal-blur));
+  }
+  .t-skel.is-revealed .t-skel-content {
+    opacity: 1;
+    filter: blur(0);
+  }
+  .t-skel.is-resetting .t-skel-skeleton,
+  .t-skel.is-resetting .t-skel-content {
+    transition: none !important;
+  }
+  .t-skel-skeleton.is-pulsing > * {
+    animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+  }
+  @keyframes t-skel-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: var(--pulse-min); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .t-skel-skeleton, .t-skel-content {
+      transition: none !important;
+    }
+    .t-skel-skeleton.is-pulsing > * { animation: none !important; }
+  }
+
+  /* Sizing for the "your bid is landing" skeleton row above the leaderboard —
+     both layers stack via inset:0, so the wrapper needs an explicit height. */
+  #pending-bid-row .t-skel { height: 84px; margin: 6px 0; }
+  #pending-bid-row .skel-bar { border-radius: 999px; background: var(--muted); }
 </style>
 </head>
 <body class="min-h-screen font-sans antialiased flex flex-col">
@@ -312,6 +374,7 @@
   <div id="leaderboard" class="max-w-5xl mx-auto px-4 md:px-6 mt-10 mb-16">
     <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">Leaderboard</h2>
     <div id="category-filters" class="flex gap-2 overflow-x-auto pb-3 mb-1"></div>
+    <div id="pending-bid-row"></div>
     <div id="leaderboard-top3" class="flex flex-col"></div>
 
     <div id="activity-section" class="my-6">

@@ -61,7 +61,10 @@ module.exports = async (req, res) => {
 
     if (isCheat) {
       await addCompedListing({ name, category, desc, price: amount, ts: Date.now() });
-      res.status(200).json({ url: `${origin}/?paid=1&comped=1&name=${encodeURIComponent(name)}` });
+      res.status(200).json({
+        url: `${origin}/?paid=1&comped=1&name=${encodeURIComponent(name)}`,
+        name, category, amount,
+      });
       return;
     }
 

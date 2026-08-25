@@ -364,6 +364,18 @@
         submitBtn.textContent = "Outbid";
         return;
       }
+      // Stash what we know so the redirect-back skeleton can show real
+      // content immediately instead of guessing. The comped/cheat path
+      // returns the server's cleaned name (suffix stripped); the Stripe
+      // path doesn't echo it back, but the client's own values are already
+      // clean there (no cheat stripping ever happens on that path).
+      try {
+        sessionStorage.setItem("se_pending_bid", JSON.stringify({
+          name: data.name || name,
+          category: data.category || category,
+          amount: data.amount || amount,
+        }));
+      } catch (e) {}
       window.location.href = data.url;
     } catch (err) {
       showError("Network error — try again.");
@@ -438,6 +450,40 @@
     applyTheme(root.classList.contains("dark") ? "light" : "dark");
   });
 
+  // Skeleton-then-reveal (transitions.dev "skeleton loader and reveal") for
+  // the row landing after a payment/cheat redirect: pulse a placeholder
+  // shaped like the real card, then cross-fade to content we already know
+  // from sessionStorage — well before the leaderboard refetch resolves.
+  function showPendingBidSkeleton(info) {
+    const wrap = document.getElementById("pending-bid-row");
+    const amount = Math.round(Number(info.amount)) || 0;
+    wrap.innerHTML = `
+      <div class="t-skel" data-state="loading">
+        <div class="t-skel-skeleton is-pulsing flex items-center gap-3 md:gap-4 px-3 md:px-4 rounded-2xl h-full" style="background:var(--card)">
+          <div class="skel-bar shrink-0" style="width:36px;height:36px"></div>
+          <div class="flex-1 flex flex-col gap-2">
+            <div class="skel-bar" style="width:45%;height:13px"></div>
+            <div class="skel-bar" style="width:65%;height:10px"></div>
+          </div>
+          <div class="skel-bar shrink-0" style="width:64px;height:26px"></div>
+        </div>
+        <div class="t-skel-content flex items-center gap-3 md:gap-4 px-3 md:px-4 rounded-2xl h-full rank-glow-1">
+          ${avatarHTML(info.name, 36)}
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-sm md:text-base truncate">${escapeHTML(info.name)}</div>
+            <div class="text-xs md:text-sm" style="color:var(--muted-fg)">Added to the board</div>
+          </div>
+          <span class="font-mono font-semibold text-sm md:text-base rounded-full px-2.5 py-0.5 shrink-0" style="background:var(--muted)">€${amount.toLocaleString()}</span>
+        </div>
+      </div>`;
+    const skel = wrap.querySelector(".t-skel");
+    setTimeout(() => skel && skel.classList.add("is-revealed"), 900);
+  }
+
+  function clearPendingBidSkeleton() {
+    document.getElementById("pending-bid-row").innerHTML = "";
+  }
+
   // handle redirect back from Stripe (or the cheat-code path, which
   // redirects the same way but skips Stripe — see api/checkout.js)
   (function handleRedirect() {
@@ -448,7 +494,16 @@
         ? `✅ ${name} added for free! It can take a few seconds to appear on the board.`
         : `✅ Payment received for ${name}! It can take a few seconds to appear on the board.`;
       showBanner(msg, "success");
-      setTimeout(loadLeaderboard, 3000);
+
+      let pending = null;
+      try { pending = JSON.parse(sessionStorage.getItem("se_pending_bid") || "null"); } catch (e) {}
+      sessionStorage.removeItem("se_pending_bid");
+      if (pending && pending.name) showPendingBidSkeleton(pending);
+
+      setTimeout(async () => {
+        await loadLeaderboard();
+        clearPendingBidSkeleton();
+      }, 3000);
     } else if (params.get("canceled") === "1") {
       showBanner("Checkout canceled — no charge was made.", "info");
     }
