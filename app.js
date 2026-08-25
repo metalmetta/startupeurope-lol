@@ -189,8 +189,11 @@
     el.addEventListener("click", (e) => {
       const outbidBtn = e.target.closest("[data-outbid]");
       if (outbidBtn) {
+        // Prefill the amount only — the URL is the CLICKER's own site, not
+        // the listing being outranked, so leave it blank and prompt for it.
         const urlInput = document.getElementById("input-url");
-        urlInput.value = outbidBtn.getAttribute("data-outbid");
+        urlInput.value = "";
+        urlInput.placeholder = "Enter your URL to claim this spot";
         urlInput.dispatchEvent(new Event("input"));
         document.getElementById("input-amount").value = outbidBtn.getAttribute("data-price");
         urlInput.focus();
