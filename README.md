@@ -69,3 +69,46 @@ since they're serverless functions.)
 
 Without Stripe configured, the site still loads and shows a banner asking
 for `STRIPE_SECRET_KEY` — the leaderboard is simply empty until it's set.
+
+## DDoS / bot protection
+
+**Automatic, no setup:** Vercel mitigates DDoS (L3/L4/L7) on every project on
+every plan by default. Nothing to configure, and you're not billed for
+traffic it blocks.
+
+**Already in this code:**
+- `api/_ratelimit.js` — a per-instance in-memory rate limiter, applied to
+  `api/checkout.js` (10 req/min/IP — also slows down brute-forcing
+  `CHEAT_CODE`) and `api/preview.js` (20 req/min/IP). Defense-in-depth only:
+  Fluid Compute reuses instances so this catches real abuse in practice, but
+  a distributed attacker spread across instances/regions can still get
+  through — see below for the layer that actually holds.
+- `api/preview.js` blocks SSRF: rejects requests to loopback/private/
+  link-local/cloud-metadata addresses, both the literal hostname and where
+  its DNS actually resolves (basic rebinding guard), and re-checks after
+  following redirects.
+
+**Needs enabling in the Vercel dashboard/CLI** (not something committable —
+run after `vercel link`):
+- **BotID** — bot detection/verification for the bid form and API routes.
+  Enable it in the project's Firewall settings.
+- **WAF rate-limit rules** — the real, edge-enforced version of the
+  in-app limiter above. Stage with `log` first, review traffic, then tighten:
+  ```
+  vercel firewall rules add "Rate limit checkout" \
+    --condition '{"type":"path","op":"eq","value":"/api/checkout"}' \
+    --action rate_limit --rate-limit-window 60 --rate-limit-requests 10 \
+    --rate-limit-keys ip --rate-limit-action log --yes
+
+  vercel firewall rules add "Rate limit preview" \
+    --condition '{"type":"path","op":"eq","value":"/api/preview"}' \
+    --action rate_limit --rate-limit-window 60 --rate-limit-requests 20 \
+    --rate-limit-keys ip --rate-limit-action log --yes
+
+  vercel firewall publish --yes
+  ```
+  After confirming the dashboard shows only abusive traffic matching, edit
+  `--rate-limit-action` to `rate_limit` (429) or `deny` and republish.
+- **Attack Mode** — emergency lever if you're actively under attack:
+  `vercel firewall attack-mode enable --duration 1h --yes`. Challenges
+  unverified visitors; exempts verified bots/crawlers.

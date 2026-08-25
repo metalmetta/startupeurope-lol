@@ -5,6 +5,7 @@
 
 const Stripe = require("stripe");
 const { addCompedListing } = require("./_comped");
+const { allow } = require("./_ratelimit");
 
 const MIN_BID = 5;
 const CATEGORIES = ["SaaS", "AI", "Fintech", "E-commerce", "Marketplace", "DevTools", "Consumer", "Other"];
@@ -21,6 +22,14 @@ module.exports = async (req, res) => {
 
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  // Also slows down brute-forcing CHEAT_CODE guesses — each attempt costs a
+  // full request either way, but this caps how many an attacker gets per
+  // minute per IP (defense-in-depth; see api/_ratelimit.js).
+  if (!allow(req, { key: "checkout", max: 10, windowMs: 60_000 })) {
+    res.status(429).json({ error: "Too many requests — slow down." });
     return;
   }
 
