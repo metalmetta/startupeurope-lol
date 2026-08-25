@@ -54,10 +54,12 @@
     return domain ? `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(domain)}` : null;
   }
 
-  function avatarHTML(name, size) {
+  function avatarHTML(name, size, faviconOverride) {
     const [c1, c2] = gradientFor(name);
     const fallback = `<div class="avatar" style="--seed1:${c1};--seed2:${c2}; width:${size}px; height:${size}px; font-size:${size * 0.4}px; position:absolute; inset:0;">${initials(name)}</div>`;
-    const favicon = faviconURL(name);
+    // faviconOverride is a real logo we already know about (seed placeholders
+    // ship one in /logos). Otherwise fall back to guessing one from the domain.
+    const favicon = faviconOverride || faviconURL(name);
     if (!favicon) return `<div style="width:${size}px;height:${size}px" class="shrink-0 relative">${fallback}</div>`;
     return `<div style="width:${size}px;height:${size}px" class="shrink-0 relative">
       ${fallback}
@@ -123,10 +125,11 @@
     const list = sorted();
     const items = [...activity].sort((a, b) => b.ts - a.ts).slice(0, 20);
     el.innerHTML = items.map(a => {
-      const rank = list.findIndex(l => l.name.toLowerCase() === a.name.toLowerCase()) + 1;
+      const match = list.find(l => l.name.toLowerCase() === a.name.toLowerCase());
+      const rank = match ? list.indexOf(match) + 1 : 0;
       return `
       <div class="shrink-0 flex items-center gap-2 rounded-full px-3 py-2 border fade-in" style="border-color:var(--border); background:var(--card)">
-        ${avatarHTML(a.name, 22)}
+        ${avatarHTML(a.name, 22, match && match.favicon)}
         <span class="text-sm font-medium whitespace-nowrap">${escapeHTML(a.name)}</span>
         <span class="text-xs whitespace-nowrap" style="color:var(--muted-fg)">#${rank || "?"} · €${a.price.toLocaleString()} · ${timeAgo(a.ts)}</span>
       </div>`;
@@ -141,7 +144,7 @@
     return `
     <div class="group relative flex items-center gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-5 rounded-2xl my-1.5 ${glow}">
       <div class="w-8 md:w-10 text-center text-sm md:text-base font-medium shrink-0" style="color:var(--muted-fg)">#${rank}</div>
-      ${avatarHTML(l.name, rank <= 3 ? 44 : 36)}
+      ${avatarHTML(l.name, rank <= 3 ? 44 : 36, l.favicon)}
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline gap-2">
           <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
