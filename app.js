@@ -123,17 +123,28 @@
     }
     section.classList.remove("hidden");
     const list = sorted();
-    const items = [...activity].sort((a, b) => b.ts - a.ts).slice(0, 20);
-    el.innerHTML = items.map(a => {
+    let items = [...activity].sort((a, b) => b.ts - a.ts).slice(0, 20);
+
+    // Continuous marquee needs one lap's worth of content to be wide enough
+    // that the -50% translate never shows a gap — pad short lists by repeating.
+    const original = items;
+    while (items.length < 8) items = items.concat(original);
+
+    const pillHTML = items.map(a => {
       const match = list.find(l => l.name.toLowerCase() === a.name.toLowerCase());
       const rank = match ? list.indexOf(match) + 1 : 0;
       return `
-      <div class="shrink-0 flex items-center gap-2 rounded-full px-3 py-2 border fade-in" style="border-color:var(--border); background:var(--card)">
+      <div class="shrink-0 flex items-center gap-2 rounded-full px-3 py-2 border" style="border-color:var(--border); background:var(--card)">
         ${avatarHTML(a.name, 22, match && match.favicon)}
         <span class="text-sm font-medium whitespace-nowrap">${escapeHTML(a.name)}</span>
         <span class="text-xs whitespace-nowrap" style="color:var(--muted-fg)">#${rank || "?"} · €${a.price.toLocaleString()} · ${timeAgo(a.ts)}</span>
       </div>`;
     }).join("");
+
+    // Two identical copies back to back — translateX(-50%) then lands exactly
+    // on the seam between them, so the loop reads as continuous.
+    el.innerHTML = pillHTML + pillHTML;
+    el.style.animationDuration = `${items.length * 4}s`;
   }
 
   function siteURL(name) {
@@ -147,20 +158,13 @@
     else if (rank === 2) glow = "rank-glow-2";
     else if (rank === 3) glow = "rank-glow-3";
     const href = siteURL(l.name);
-    const nameTag = href
-      ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="min-w-0 truncate font-bold text-sm md:text-base hover:underline">${escapeHTML(l.name)}</a>`
-      : `<span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>`;
-    const avatar = avatarHTML(l.name, rank <= 3 ? 44 : 36, l.favicon);
-    const avatarTag = href
-      ? `<a href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(l.name)}">${avatar}</a>`
-      : avatar;
     return `
-    <div class="group relative flex items-center gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-5 rounded-2xl my-1.5 ${glow}">
+    <div class="group relative flex items-center gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-5 rounded-2xl my-1.5 transition-colors ${glow} ${href ? "cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.04]" : ""}" ${href ? `data-href="${href}" role="link" tabindex="0"` : ""}>
       <div class="w-8 md:w-10 text-center text-sm md:text-base font-medium shrink-0" style="color:var(--muted-fg)">#${rank}</div>
-      ${avatarTag}
+      ${avatarHTML(l.name, rank <= 3 ? 44 : 36, l.favicon)}
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline gap-2">
-          ${nameTag}
+          <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
         </div>
         ${l.desc ? `<div class="text-xs md:text-sm truncate" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
         <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
@@ -177,16 +181,32 @@
     </div>`;
   }
 
-  function bindOutbidButtons(el) {
-    el.querySelectorAll("[data-outbid]").forEach(btn => {
-      btn.addEventListener("click", () => {
+  // Delegated so it survives innerHTML re-renders — bound once per container
+  // (guarded by data-bound) rather than re-attached on every render.
+  function bindCardInteractions(el) {
+    if (el.dataset.bound) return;
+    el.dataset.bound = "1";
+    el.addEventListener("click", (e) => {
+      const outbidBtn = e.target.closest("[data-outbid]");
+      if (outbidBtn) {
         const urlInput = document.getElementById("input-url");
-        urlInput.value = btn.getAttribute("data-outbid");
+        urlInput.value = outbidBtn.getAttribute("data-outbid");
         urlInput.dispatchEvent(new Event("input"));
-        document.getElementById("input-amount").value = btn.getAttribute("data-price");
+        document.getElementById("input-amount").value = outbidBtn.getAttribute("data-price");
         urlInput.focus();
         document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
-      });
+        return;
+      }
+      const card = e.target.closest("[data-href]");
+      if (card) window.open(card.getAttribute("data-href"), "_blank", "noopener,noreferrer");
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest("[data-href]");
+      if (card) {
+        e.preventDefault();
+        window.open(card.getAttribute("data-href"), "_blank", "noopener,noreferrer");
+      }
     });
   }
 
@@ -220,8 +240,8 @@
     top3El.innerHTML = top3.map((l, i) => leaderboardCardHTML(l, i + 1)).join("");
     restEl.innerHTML = rest.map((l, i) => leaderboardCardHTML(l, i + 4)).join("");
 
-    bindOutbidButtons(top3El);
-    bindOutbidButtons(restEl);
+    bindCardInteractions(top3El);
+    bindCardInteractions(restEl);
   }
 
   function showBanner(msg, kind) {
