@@ -108,10 +108,16 @@
     });
   }
 
+  let amountTouched = false;
+
   function renderForm(list) {
     const top = list[0];
     const topPrice = top ? top.price : 0;
-    document.getElementById("target-price").textContent = Math.ceil(topPrice + (top ? 1 : 0)).toLocaleString();
+    const target = Math.ceil(topPrice + (top ? 1 : 0));
+    document.getElementById("target-price").textContent = target.toLocaleString();
+    // Keep the amount field pre-filled with the current #1 price until the
+    // visitor actually types their own — then leave it alone.
+    if (!amountTouched) document.getElementById("input-amount").value = target;
   }
 
   function renderActivity() {
@@ -196,6 +202,7 @@
         urlInput.placeholder = "Enter your URL to claim this spot";
         urlInput.dispatchEvent(new Event("input"));
         document.getElementById("input-amount").value = outbidBtn.getAttribute("data-price");
+        amountTouched = true;
         urlInput.focus();
         document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
         return;
@@ -396,9 +403,21 @@
     const amount = document.getElementById("target-price").textContent.replace(/[^\d]/g, "");
     const amountInput = document.getElementById("input-amount");
     amountInput.value = amount;
+    amountTouched = true;
     amountInput.focus();
     document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
   });
+
+  document.getElementById("input-amount").addEventListener("input", () => { amountTouched = true; });
+
+  function stepAmount(delta) {
+    const amountInput = document.getElementById("input-amount");
+    const current = parseInt(amountInput.value, 10) || 0;
+    amountInput.value = Math.max(5, current + delta);
+    amountTouched = true;
+  }
+  document.getElementById("amount-minus").addEventListener("click", () => stepAmount(-1));
+  document.getElementById("amount-plus").addEventListener("click", () => stepAmount(1));
 
   // Category dropdown — plus-to-menu morph (transitions.dev #20), adapted
   // so a full-width rounded-square trigger grows straight down into the

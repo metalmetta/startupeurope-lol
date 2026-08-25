@@ -319,10 +319,10 @@
 
   <!-- BID FORM -->
   <div class="max-w-2xl mx-auto px-4 md:px-6 mt-8 md:mt-10">
-    <div class="rounded-2xl card-shadow px-5 py-5 md:px-8 md:py-6" style="background:var(--card)">
-      <div class="mb-4 text-center">
-        <div class="text-sm mb-1.5" style="color:var(--muted-fg)">Claim <span id="claim-rank-label" class="font-semibold" style="color:var(--fg)">#1</span> for</div>
-        <button type="button" id="target-price-btn" class="inline-flex items-baseline justify-center rounded-xl px-4 py-1.5 sm:px-6 sm:py-2 card-shadow font-mono text-2xl sm:text-4xl font-semibold tabular-nums cursor-pointer transition-transform hover:scale-[1.03] active:scale-[0.98]" style="background:var(--muted); color:inherit; border:0;">
+    <div class="rounded-2xl card-shadow px-5 py-4 md:px-6 md:py-4" style="background:var(--card)">
+      <div class="mb-3 text-center">
+        <div class="text-sm" style="color:var(--muted-fg)">Claim <span id="claim-rank-label" class="font-semibold" style="color:var(--fg)">#1</span> for</div>
+        <button type="button" id="target-price-btn" class="inline-flex items-baseline justify-center rounded-lg px-3 py-1 mt-1 card-shadow font-mono text-xl sm:text-2xl font-semibold tabular-nums cursor-pointer transition-transform hover:scale-[1.03] active:scale-[0.98]" style="background:var(--muted); color:inherit; border:0;">
           €<span id="target-price">5</span>
         </button>
       </div>
@@ -351,10 +351,14 @@
           </div>
           <input type="hidden" id="input-category" value="SaaS">
 
-          <div class="flex items-center rounded-xl border px-4 py-3 gap-1 shrink-0 md:w-36" style="background:var(--bg); border-color:var(--border)">
-            <span style="color:var(--muted-fg)">€</span>
-            <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount"
-              class="w-full bg-transparent outline-none text-sm tabular-nums">
+          <div class="flex items-stretch rounded-xl border shrink-0 md:w-44 overflow-hidden" style="background:var(--bg); border-color:var(--border)">
+            <button type="button" id="amount-minus" aria-label="Decrease amount" class="w-9 shrink-0 flex items-center justify-center text-lg font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors" style="color:var(--muted-fg)">−</button>
+            <div class="flex-1 flex items-center justify-center gap-1 px-1 min-w-0">
+              <span style="color:var(--muted-fg)">€</span>
+              <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount"
+                class="w-full min-w-0 bg-transparent outline-none text-sm text-center tabular-nums">
+            </div>
+            <button type="button" id="amount-plus" aria-label="Increase amount" class="w-9 shrink-0 flex items-center justify-center text-lg font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors" style="color:var(--muted-fg)">+</button>
           </div>
           <button type="submit" id="submit-btn" class="shrink-0 rounded-xl bg-primary text-primary-foreground font-bold text-sm px-6 py-3 h-[46px] hover:bg-primary/85 active:translate-y-px transition-all">
             Outbid
