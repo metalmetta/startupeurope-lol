@@ -377,6 +377,44 @@
     render();
   });
 
+  // Category dropdown — plus-to-menu morph (transitions.dev #20), adapted
+  // so a full-width rounded-square trigger grows straight down into the
+  // option list instead of a 40px circular FAB growing in both dimensions.
+  (function initCategoryMorph() {
+    const morph = document.getElementById("category-morph");
+    const trigger = document.getElementById("category-trigger");
+    const label = document.getElementById("category-label");
+    const hiddenInput = document.getElementById("input-category");
+
+    function setOpen(open) {
+      morph.setAttribute("data-open", String(open));
+      trigger.setAttribute("aria-expanded", String(open));
+    }
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setOpen(morph.getAttribute("data-open") !== "true");
+    });
+
+    morph.querySelectorAll(".cat-option").forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const value = opt.getAttribute("data-value");
+        hiddenInput.value = value;
+        label.textContent = value;
+        morph.querySelectorAll(".cat-option").forEach((o) => o.setAttribute("aria-selected", String(o === opt)));
+        setOpen(false);
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!morph.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
+    });
+  })();
+
   // theme toggle
   const root = document.documentElement;
   function applyTheme(mode) {
