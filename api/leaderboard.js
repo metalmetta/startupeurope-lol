@@ -12,23 +12,6 @@ let cache = null;
 let cacheAt = 0;
 const CACHE_MS = 4000;
 
-// Seed placeholders shown while real bids are still thin. Each one only
-// fills a slot when no real Stripe payment exists yet for that name — the
-// instant a real bid comes in for the same URL, it fully replaces the seed
-// (see the merge below), so a seed can never block or absorb real money.
-const SEED_LISTINGS = [
-  { name: "nova.ai", category: "AI", desc: "AI copilots for European SMEs — invoices, contracts, and customer replies, drafted automatically.", price: 420, hoursAgo: 3, clicks: 812, favicon: "/logos/nova-ai.svg" },
-  { name: "borsapay.it", category: "Fintech", desc: "Instant B2B payments and invoice financing for small European suppliers.", price: 380, hoursAgo: 5, clicks: 664, favicon: "/logos/borsapay-it.svg" },
-  { name: "tavolo.app", category: "Consumer", desc: "Book the table, order, and split the bill — one app for restaurants across Europe.", price: 310, hoursAgo: 2, clicks: 591, favicon: "/logos/tavolo-app.svg" },
-  { name: "fashionloop.it", category: "E-commerce", desc: "Resell and rent pre-loved European designer fashion, authenticated in 24h.", price: 275, hoursAgo: 8, clicks: 503, favicon: "/logos/fashionloop-it.svg" },
-  { name: "buildstack.dev", category: "DevTools", desc: "One-click infra for European startups — deploy, monitor, and scale without a DevOps hire.", price: 240, hoursAgo: 6, clicks: 447, favicon: "/logos/buildstack-dev.svg" },
-  { name: "ventomarket.it", category: "Marketplace", desc: "Local marketplace connecting small European producers directly with restaurants.", price: 190, hoursAgo: 12, clicks: 388, favicon: "/logos/ventomarket-it.svg" },
-  { name: "cloudpanel.io", category: "SaaS", desc: "The all-in-one back office for European freelancers — invoicing, taxes, and clients.", price: 150, hoursAgo: 4, clicks: 305, favicon: "/logos/cloudpanel-io.svg" },
-  { name: "spesaexpress.it", category: "E-commerce", desc: "30-minute grocery delivery from your neighborhood's own shops.", price: 120, hoursAgo: 15, clicks: 261, favicon: "/logos/spesaexpress-it.svg" },
-  { name: "lexbot.ai", category: "AI", desc: "AI paralegal for European law firms — contract review in minutes, not days.", price: 95, hoursAgo: 9, clicks: 198, favicon: "/logos/lexbot-ai.svg" },
-  { name: "pagofacile.it", category: "Fintech", desc: "Tap-to-pay for European market stalls and street vendors — no terminal needed.", price: 60, hoursAgo: 20, clicks: 142, favicon: "/logos/pagofacile-it.svg" },
-];
-
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
@@ -114,34 +97,10 @@ module.exports = async (req, res) => {
       activity.push({ name: c.name, price: c.price, ts: c.ts || Date.now() });
     }
 
-    for (const seed of SEED_LISTINGS) {
-      const key = seed.name.toLowerCase();
-      if (byName.has(key)) continue; // a real bid or comp already exists — never override it
-      byName.set(key, {
-        id: key,
-        name: seed.name,
-        category: seed.category,
-        desc: seed.desc,
-        price: seed.price,
-        ts: Date.now() - seed.hoursAgo * 3600 * 1000,
-        clicks: seed.clicks,
-        favicon: seed.favicon,
-        seed: true,
-      });
-    }
-
     const listings = Array.from(byName.values()).map((l) => ({
       ...l,
       clicks: l.clicks != null ? l.clicks : seededClicks(l.name),
     }));
-
-    // No real bids yet at all — seed the activity feed too, so it doesn't
-    // sit empty under a populated board. Disappears the moment a real one lands.
-    if (activity.length === 0) {
-      for (const seed of SEED_LISTINGS) {
-        activity.push({ name: seed.name, price: seed.price, ts: Date.now() - seed.hoursAgo * 3600 * 1000 });
-      }
-    }
 
     activity.sort((a, b) => b.ts - a.ts);
 
