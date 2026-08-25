@@ -260,9 +260,9 @@
     <div class="rounded-2xl card-shadow px-5 py-5 md:px-8 md:py-6" style="background:var(--card)">
       <div class="mb-4 text-center">
         <div class="text-sm mb-1.5" style="color:var(--muted-fg)">Claim <span id="claim-rank-label" class="font-semibold" style="color:var(--fg)">#1</span> for</div>
-        <div class="inline-flex items-baseline justify-center rounded-xl px-4 py-1.5 sm:px-6 sm:py-2 card-shadow font-mono text-2xl sm:text-4xl font-semibold tabular-nums" style="background:var(--muted)">
+        <button type="button" id="target-price-btn" class="inline-flex items-baseline justify-center rounded-xl px-4 py-1.5 sm:px-6 sm:py-2 card-shadow font-mono text-2xl sm:text-4xl font-semibold tabular-nums cursor-pointer transition-transform hover:scale-[1.03] active:scale-[0.98]" style="background:var(--muted); color:inherit; border:0;">
           €<span id="target-price">5</span>
-        </div>
+        </button>
       </div>
       <form id="bid-form" class="flex flex-col gap-2">
         <div class="flex flex-col gap-2 md:flex-row md:items-center">

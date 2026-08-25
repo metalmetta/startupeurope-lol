@@ -377,6 +377,14 @@
     render();
   });
 
+  document.getElementById("target-price-btn").addEventListener("click", function () {
+    const amount = document.getElementById("target-price").textContent.replace(/[^\d]/g, "");
+    const amountInput = document.getElementById("input-amount");
+    amountInput.value = amount;
+    amountInput.focus();
+    document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
   // Category dropdown — plus-to-menu morph (transitions.dev #20), adapted
   // so a full-width rounded-square trigger grows straight down into the
   // option list instead of a 40px circular FAB growing in both dimensions.
