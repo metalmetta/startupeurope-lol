@@ -49,8 +49,12 @@ module.exports = async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      // No payment_method_types: this account has Managed Payments enabled,
-      // which selects payment methods automatically and rejects that param.
+      // Managed Payments is enabled by default on this account and requires
+      // a tax_code on every product plus picks payment methods for you.
+      // A leaderboard placement fee isn't a taxable good, so opt out of it
+      // rather than assigning a tax code.
+      managed_payments: { enabled: false },
+      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
