@@ -79,7 +79,6 @@
   function render() {
     const list = sorted();
     renderForm(list);
-    renderTrending(list);
     renderActivity();
     renderCategoryFilters(list);
     renderLeaderboard(list);
@@ -113,45 +112,76 @@
     document.getElementById("target-price").textContent = Math.ceil(topPrice + (top ? 1 : 0)).toLocaleString();
   }
 
-  function renderTrending(list) {
-    const el = document.getElementById("trending-row");
-    if (!list.length) { el.innerHTML = `<p class="text-sm" style="color:var(--muted-fg)">Nothing trending yet — be the first bid.</p>`; return; }
-    const top = [...list].sort((a, b) => b.clicks - a.clicks).slice(0, 6);
-    el.innerHTML = top.map(l => `
-      <div class="shrink-0 flex items-center gap-2 rounded-full px-3 py-2 border" style="border-color:var(--border); background:var(--card)">
-        ${avatarHTML(l.name, 22)}
-        <span class="text-sm font-medium whitespace-nowrap">${escapeHTML(l.name)}</span>
-        <span class="text-xs whitespace-nowrap" style="color:var(--muted-fg)">${l.clicks} clicks/h</span>
-      </div>`).join("");
-  }
-
   function renderActivity() {
+    const section = document.getElementById("activity-section");
     const el = document.getElementById("activity-list");
-    if (!activity.length) { el.innerHTML = `<p class="text-sm" style="color:var(--muted-fg)">No bids yet.</p>`; return; }
+    if (!activity.length) {
+      section.classList.add("hidden");
+      return;
+    }
+    section.classList.remove("hidden");
     const list = sorted();
-    const items = [...activity].sort((a, b) => b.ts - a.ts).slice(0, showAll ? 50 : 5);
+    const items = [...activity].sort((a, b) => b.ts - a.ts).slice(0, 20);
     el.innerHTML = items.map(a => {
       const rank = list.findIndex(l => l.name.toLowerCase() === a.name.toLowerCase()) + 1;
       return `
-      <div class="flex items-center gap-3 rounded-xl px-3 py-2 border fade-in" style="border-color:var(--border); background:var(--card)">
-        ${avatarHTML(a.name, 28)}
-        <div class="min-w-0 flex-1 truncate text-sm">
-          <span class="font-medium">${escapeHTML(a.name)}</span>
-          <span style="color:var(--muted-fg)"> at #${rank || "?"} · €${a.price.toLocaleString()}</span>
-        </div>
-        <span class="text-xs shrink-0" style="color:var(--muted-fg)">${timeAgo(a.ts)}</span>
+      <div class="shrink-0 flex items-center gap-2 rounded-full px-3 py-2 border fade-in" style="border-color:var(--border); background:var(--card)">
+        ${avatarHTML(a.name, 22)}
+        <span class="text-sm font-medium whitespace-nowrap">${escapeHTML(a.name)}</span>
+        <span class="text-xs whitespace-nowrap" style="color:var(--muted-fg)">#${rank || "?"} · €${a.price.toLocaleString()} · ${timeAgo(a.ts)}</span>
       </div>`;
     }).join("");
   }
 
+  function leaderboardCardHTML(l, rank) {
+    let glow = "";
+    if (rank === 1) glow = "rank-glow-1";
+    else if (rank === 2) glow = "rank-glow-2";
+    else if (rank === 3) glow = "rank-glow-3";
+    return `
+    <div class="group relative flex items-center gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-5 rounded-2xl my-1.5 ${glow}">
+      <div class="w-8 md:w-10 text-center text-sm md:text-base font-medium shrink-0" style="color:var(--muted-fg)">#${rank}</div>
+      ${avatarHTML(l.name, rank <= 3 ? 44 : 36)}
+      <div class="min-w-0 flex-1">
+        <div class="flex items-baseline gap-2">
+          <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
+          <span class="font-mono font-semibold text-sm md:text-base shrink-0">€${l.price.toLocaleString()}</span>
+        </div>
+        ${l.desc ? `<div class="text-xs md:text-sm truncate" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
+        <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
+          <span class="rounded-full px-1.5 py-0.5 font-medium" style="background:var(--muted)">${escapeHTML(l.category)}</span>
+          <span>·</span><span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
+        </div>
+      </div>
+      <button data-outbid="${escapeHTML(l.name)}" data-price="${Math.ceil(l.price) + 1}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
+        claim for €${(Math.ceil(l.price) + 1).toLocaleString()}
+      </button>
+    </div>`;
+  }
+
+  function bindOutbidButtons(el) {
+    el.querySelectorAll("[data-outbid]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const urlInput = document.getElementById("input-url");
+        urlInput.value = btn.getAttribute("data-outbid");
+        urlInput.dispatchEvent(new Event("input"));
+        document.getElementById("input-amount").value = btn.getAttribute("data-price");
+        urlInput.focus();
+        document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  }
+
   function renderLeaderboard(fullList) {
-    const el = document.getElementById("leaderboard-list");
+    const top3El = document.getElementById("leaderboard-top3");
+    const restEl = document.getElementById("leaderboard-rest");
     const emptyEl = document.getElementById("empty-state");
 
     const list = activeCategory === "All" ? fullList : fullList.filter(l => l.category === activeCategory);
 
     if (!list.length) {
-      el.innerHTML = "";
+      top3El.innerHTML = "";
+      restEl.innerHTML = "";
       emptyEl.classList.remove("hidden");
       const [titleEl, subEl] = emptyEl.querySelectorAll("p");
       if (fullList.length) {
@@ -166,43 +196,14 @@
     emptyEl.classList.add("hidden");
 
     const items = showAll ? list : list.slice(0, 10);
-    el.innerHTML = items.map((l, i) => {
-      const rank = i + 1;
-      let glow = "";
-      if (rank === 1) glow = "rank-glow-1";
-      else if (rank === 2) glow = "rank-glow-2";
-      else if (rank === 3) glow = "rank-glow-3";
-      return `
-      <div class="group relative flex items-center gap-3 md:gap-4 px-3 md:px-4 py-4 md:py-5 rounded-2xl my-1.5 ${glow}">
-        <div class="w-8 md:w-10 text-center text-sm md:text-base font-medium shrink-0" style="color:var(--muted-fg)">#${rank}</div>
-        ${avatarHTML(l.name, rank <= 3 ? 44 : 36)}
-        <div class="min-w-0 flex-1">
-          <div class="flex items-baseline gap-2">
-            <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
-            <span class="font-mono font-semibold text-sm md:text-base shrink-0">€${l.price.toLocaleString()}</span>
-          </div>
-          ${l.desc ? `<div class="text-xs md:text-sm truncate" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
-          <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
-            <span class="rounded-full px-1.5 py-0.5 font-medium" style="background:var(--muted)">${escapeHTML(l.category)}</span>
-            <span>·</span><span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
-          </div>
-        </div>
-        <button data-outbid="${escapeHTML(l.name)}" data-price="${Math.ceil(l.price) + 1}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
-          claim for €${(Math.ceil(l.price) + 1).toLocaleString()}
-        </button>
-      </div>`;
-    }).join("");
+    const top3 = items.slice(0, 3);
+    const rest = items.slice(3);
 
-    el.querySelectorAll("[data-outbid]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const urlInput = document.getElementById("input-url");
-        urlInput.value = btn.getAttribute("data-outbid");
-        urlInput.dispatchEvent(new Event("input"));
-        document.getElementById("input-amount").value = btn.getAttribute("data-price");
-        urlInput.focus();
-        document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    });
+    top3El.innerHTML = top3.map((l, i) => leaderboardCardHTML(l, i + 1)).join("");
+    restEl.innerHTML = rest.map((l, i) => leaderboardCardHTML(l, i + 4)).join("");
+
+    bindOutbidButtons(top3El);
+    bindOutbidButtons(restEl);
   }
 
   function showBanner(msg, kind) {

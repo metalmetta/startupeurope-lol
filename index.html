@@ -165,23 +165,18 @@
     </div>
   </div>
 
-  <!-- TRENDING -->
-  <div class="max-w-5xl mx-auto px-4 md:px-6 mt-10">
-    <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">🔥 Trending right now</h2>
-    <div id="trending-row" class="flex gap-2 sm:gap-3 overflow-x-auto pb-2"></div>
-  </div>
-
-  <!-- ACTIVITY -->
-  <div class="max-w-5xl mx-auto px-4 md:px-6 mt-8">
-    <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">Latest activity</h2>
-    <div id="activity-list" class="flex flex-col gap-2"></div>
-  </div>
-
   <!-- LEADERBOARD -->
   <div id="leaderboard" class="max-w-5xl mx-auto px-4 md:px-6 mt-10 mb-16">
     <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">Leaderboard</h2>
     <div id="category-filters" class="flex gap-2 overflow-x-auto pb-3 mb-1"></div>
-    <div id="leaderboard-list" class="flex flex-col"></div>
+    <div id="leaderboard-top3" class="flex flex-col"></div>
+
+    <div id="activity-section" class="my-6">
+      <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">🔥 Latest activity</h2>
+      <div id="activity-list" class="flex gap-2 sm:gap-3 overflow-x-auto pb-2"></div>
+    </div>
+
+    <div id="leaderboard-rest" class="flex flex-col"></div>
     <div id="empty-state" class="hidden rounded-2xl border px-6 py-10 text-center" style="border-color:var(--border)">
       <p class="font-semibold mb-1">No one has claimed a spot yet.</p>
       <p class="text-sm" style="color:var(--muted-fg)">Be the first Italian startup on the board — bid above claims #1.</p>
