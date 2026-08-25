@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>outbid.lol — pay to rank</title>
-<meta name="description" content="Claim #1 on the public leaderboard. Anyone can outbid you at any time.">
+<title>milanocity.lol — pay to rank, Milano style</title>
+<meta name="description" content="Italian startups compete for the top spot. Claim your rank, anyone can outbid you.">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -12,15 +12,16 @@
     theme: {
       extend: {
         colors: {
-          primary: '#e8501f',
-          'primary-foreground': '#fff8f0',
+          primary: '#1f6f4a',
+          'primary-foreground': '#f7f5ef',
+          gold: '#c9a35c',
           card: 'var(--card)',
           background: 'var(--bg)',
           foreground: 'var(--fg)',
           muted: 'var(--muted)',
           'muted-foreground': 'var(--muted-fg)',
           border: 'var(--border)',
-          live: '#16a34a',
+          live: '#1f6f4a',
         },
         fontFamily: {
           sans: ['-apple-system','BlinkMacSystemFont','Inter','Segoe UI','Helvetica','Arial','sans-serif'],
@@ -32,22 +33,32 @@
 </script>
 <style>
   :root {
-    --bg: #faf6f1;
+    --bg: #f6f3ec;
     --card: #ffffff;
-    --fg: #1c1917;
-    --muted: #f0ebe4;
-    --muted-fg: #78716c;
-    --border: #e7e0d8;
+    --fg: #211f1a;
+    --muted: #ece6d8;
+    --muted-fg: #7a7263;
+    --border: #e3dcc9;
   }
   html.dark {
-    --bg: #171310;
-    --card: #221d18;
-    --fg: #f5f0ea;
-    --muted: #2a241e;
-    --muted-fg: #a89f95;
-    --border: #332c25;
+    --bg: #15140f;
+    --card: #1e1d16;
+    --fg: #f2efe6;
+    --muted: #242219;
+    --muted-fg: #a39c8a;
+    --border: #322f24;
   }
-  body { background: var(--bg); color: var(--fg); }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(31,111,74,0.06) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+  html.dark body {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(201,163,92,0.06) 1px, transparent 0);
+  }
   .card-shadow { box-shadow: 0 12px 50px rgba(40,38,36,0.08); }
   ::-webkit-scrollbar { height: 6px; width: 6px; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
@@ -58,21 +69,24 @@
   }
   @keyframes ping { 75%,100% { transform: scale(2); opacity: 0; } }
   .animate-ping-slow { animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite; }
-  .rank-glow-1 { border: 2px solid #e8501f; background: rgba(232,80,31,0.10); }
-  .rank-glow-2 { border: 2px solid rgba(232,80,31,0.4); background: rgba(232,80,31,0.06); }
-  .rank-glow-3 { border: 2px solid rgba(232,80,31,0.15); background: rgba(232,80,31,0.03); }
+  .rank-glow-1 { border: 2px solid #1f6f4a; background: rgba(31,111,74,0.10); }
+  .rank-glow-2 { border: 2px solid rgba(201,163,92,0.55); background: rgba(201,163,92,0.08); }
+  .rank-glow-3 { border: 2px solid rgba(31,111,74,0.15); background: rgba(31,111,74,0.03); }
   .fade-in { animation: fadeIn .4s ease; }
   @keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to { opacity:1; transform:none; } }
   input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin:0; }
+  .flag-bar { height:3px; background: linear-gradient(to right, #009246 0 33.3%, #f1f2f1 33.3% 66.6%, #ce2b37 66.6% 100%); }
 </style>
 </head>
 <body class="min-h-screen font-sans antialiased flex flex-col">
+
+<div class="flag-bar"></div>
 
 <!-- HEADER -->
 <header class="border-b" style="border-color:var(--border)">
   <div class="max-w-5xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between gap-4">
     <a href="#" class="inline-flex items-center gap-1.5 font-medium tracking-tight text-[20px] shrink-0">
-      <span>outbid</span><span class="text-primary">.lol</span>
+      <span>milanocity</span><span class="text-primary">.lol</span>
     </a>
     <nav class="hidden sm:flex items-center gap-5 text-sm text-muted-foreground">
       <a href="#leaderboard" class="font-medium hover:text-foreground transition-colors" style="color:var(--fg)">Leaderboard</a>
@@ -89,21 +103,34 @@
   <!-- HERO -->
   <div class="max-w-5xl mx-auto px-4 md:px-6 pt-10 md:pt-14 pb-2 text-center">
     <h1 class="flex flex-wrap items-center justify-center gap-x-2 text-[28px] md:text-[40px] font-bold tracking-[-0.03em]">
-      outbid<span class="text-primary">.lol</span>
+      milanocity<span class="text-primary">.lol</span>
     </h1>
+    <p class="mt-2 text-sm md:text-base" style="color:var(--muted-fg)">
+      Italian startups, one leaderboard. 🇮🇹 Pay to rank — anyone can outbid you.
+    </p>
     <div class="mt-3 flex flex-wrap items-center justify-center gap-x-2 text-sm" style="color:var(--muted-fg)">
       <span class="inline-flex items-center gap-1.5">
         <span class="relative inline-flex size-2">
           <span class="absolute inline-flex size-full animate-ping-slow rounded-full bg-live opacity-75"></span>
           <span class="relative inline-flex size-2 rounded-full bg-live"></span>
         </span>
-        <span id="online-count" class="font-semibold" style="color:var(--fg)">512</span> online
+        <span id="online-count" class="font-semibold" style="color:var(--fg)">318</span> online
       </span>
       <span>·</span>
-      <span><span id="visitor-count" class="font-semibold" style="color:var(--fg)">1,072,388</span> visitors since launch</span>
+      <span><span id="visitor-count" class="font-semibold" style="color:var(--fg)">0</span> visitors since launch</span>
       <span>·</span>
       <a href="#about" class="font-medium text-primary hover:opacity-80">see stats→</a>
     </div>
+  </div>
+
+  <div id="config-banner" class="hidden max-w-2xl mx-auto px-4 md:px-6 mt-6">
+    <div class="rounded-xl border px-4 py-3 text-sm text-center" style="border-color:var(--gold); background:rgba(201,163,92,0.12); color:var(--fg)">
+      ⚠️ Stripe isn't connected on this deployment yet — set <code class="font-mono">STRIPE_SECRET_KEY</code> (and <code class="font-mono">STRIPE_WEBHOOK_SECRET</code>) in your Vercel project's environment variables to accept real bids.
+    </div>
+  </div>
+
+  <div id="status-banner" class="hidden max-w-2xl mx-auto px-4 md:px-6 mt-6">
+    <div id="status-banner-inner" class="rounded-xl border px-4 py-3 text-sm text-center"></div>
   </div>
 
   <!-- BID FORM -->
@@ -112,11 +139,11 @@
       <div class="mb-6 text-center">
         <div class="text-sm mb-2" style="color:var(--muted-fg)">Claim <span id="claim-rank-label" class="font-semibold" style="color:var(--fg)">#1</span> for</div>
         <div class="inline-flex items-baseline justify-center rounded-2xl px-5 py-3 sm:px-8 sm:py-4 card-shadow font-mono text-4xl sm:text-6xl font-semibold tabular-nums" style="background:var(--muted)">
-          $<span id="target-price">14018</span>
+          €<span id="target-price">5</span>
         </div>
       </div>
       <form id="bid-form" class="flex flex-col gap-3">
-        <input id="input-url" required type="text" placeholder="yoursite.com or @handle"
+        <input id="input-url" required type="text" placeholder="yourstartup.it or @handle"
           class="w-full rounded-full border px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
           style="background:var(--bg); border-color:var(--border)">
         <input id="input-desc" type="text" maxlength="140" placeholder="One-line description (optional)"
@@ -124,17 +151,17 @@
           style="background:var(--bg); border-color:var(--border)">
         <div class="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
           <div class="flex-1 flex items-center rounded-full border px-4 py-3 gap-1" style="background:var(--bg); border-color:var(--border)">
-            <span style="color:var(--muted-fg)">$</span>
-            <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount in dollars"
+            <span style="color:var(--muted-fg)">€</span>
+            <input id="input-amount" required type="number" min="5" step="1" placeholder="Amount in euros"
               class="w-full bg-transparent outline-none text-sm tabular-nums">
           </div>
-          <button type="submit" class="shrink-0 rounded-full bg-primary text-primary-foreground font-bold text-sm px-6 py-3 h-[46px] hover:bg-primary/85 active:translate-y-px transition-all">
+          <button type="submit" id="submit-btn" class="shrink-0 rounded-full bg-primary text-primary-foreground font-bold text-sm px-6 py-3 h-[46px] hover:bg-primary/85 active:translate-y-px transition-all">
             Outbid
           </button>
         </div>
         <p class="text-xs text-center mt-1" style="color:var(--muted-fg)">
-          New spots start at $5. Paying less than the #1 price still puts you on the board at whatever place that bid can take.
-          Already on the list? Enter the same URL or @handle and up your bid.
+          New spots start at €5. Paying less than the #1 price still puts you on the board at whatever place that bid can take.
+          Already on the list? Enter the same URL or @handle and top up your bid. Payments are processed securely by Stripe.
         </p>
         <p id="form-error" class="text-xs text-center text-red-500 hidden"></p>
       </form>
@@ -157,6 +184,10 @@
   <div id="leaderboard" class="max-w-5xl mx-auto px-4 md:px-6 mt-10 mb-16">
     <h2 class="text-sm font-semibold tracking-[-0.02em] mb-3">Leaderboard</h2>
     <div id="leaderboard-list" class="flex flex-col"></div>
+    <div id="empty-state" class="hidden rounded-2xl border px-6 py-10 text-center" style="border-color:var(--border)">
+      <p class="font-semibold mb-1">No one has claimed a spot yet.</p>
+      <p class="text-sm" style="color:var(--muted-fg)">Be the first Italian startup on the board — bid above claims #1.</p>
+    </div>
     <div class="mt-6 text-center">
       <button id="show-more-btn" class="rounded-full px-4 py-2 text-sm font-medium" style="background:var(--muted); color:var(--muted-fg)">Show more</button>
     </div>
@@ -165,20 +196,20 @@
   <!-- ABOUT / RULES -->
   <div id="about" class="max-w-2xl mx-auto px-4 md:px-6 mt-4 mb-16 text-sm" style="color:var(--muted-fg)">
     <h3 class="font-semibold text-base mb-2" style="color:var(--fg)">About</h3>
-    <p class="mb-6">outbid.lol is a public leaderboard. Anyone can list their site, app, or profile and pay to move up. There's no subscription and no reserved spot — if someone pays more than you, they take your rank. This is a fan-made clone built for fun; it stores everything locally in your browser and doesn't process real payments.</p>
+    <p class="mb-6">milanocity.lol is a public leaderboard for Italian startups. Anyone can list their site, app, or profile and pay in euros to move up. There's no subscription and no reserved spot — if someone pays more than you, they take your rank. Payments are real and processed by Stripe; the leaderboard itself is read straight from confirmed Stripe payments, so there's no separate database to fake.</p>
     <h3 id="rules" class="font-semibold text-base mb-2" style="color:var(--fg)">Rules</h3>
     <ul class="list-disc pl-5 space-y-1">
-      <li>Minimum bid is $5.</li>
+      <li>Minimum bid is €5, charged via Stripe Checkout.</li>
       <li>To reach #1 you must bid more than the current #1.</li>
       <li>Lower bids still claim whatever rank they can outrank.</li>
-      <li>Re-enter the same URL/handle to top up your own bid.</li>
-      <li>Be reasonable — this is a demo, not a real marketplace.</li>
+      <li>Re-enter the same URL/handle to top up your own bid — amounts accumulate.</li>
+      <li>Be reasonable — this is a community leaderboard, not a real marketplace.</li>
     </ul>
   </div>
 </main>
 
 <footer class="border-t py-6 text-center text-xs" style="border-color:var(--border); color:var(--muted-fg)">
-  <p>outbid.lol clone — built for fun, not affiliated with the original. No real money changes hands here.</p>
+  <p>milanocity.lol — built for Italy's startup community. Inspired by outbid.lol, not affiliated with it.</p>
 </footer>
 
 <script src="app.js"></script>

@@ -1,0 +1,9 @@
+{
+  "name": "milanocity-lol",
+  "private": true,
+  "version": "1.0.0",
+  "description": "milanocity.lol — pay-to-rank leaderboard for Italian startups, backed by Stripe Checkout.",
+  "dependencies": {
+    "stripe": "^17.4.0"
+  }
+}

@@ -1,65 +1,22 @@
-// outbid.lol clone — client-side simulation, persisted to localStorage
+// milanocity.lol — frontend. The leaderboard is read live from /api/leaderboard
+// (which itself reads completed Stripe Checkout Sessions — no local fake state).
+// Bidding redirects to a real Stripe Checkout session via /api/checkout.
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "outbid_clone_state_v1";
-  const MIN_BID = 5;
-
-  const SEED_LISTINGS = [
-    { name: "joni.ai", price: 14013, desc: "JONI is your personal AI computer. Chat once and a team of AI agents and skills gets to work, with the right model picked for every job. None of the complexity.", clicks: 5554, hoursAgo: 9 },
-    { name: "outrank.so", price: 13005, desc: "Get traffic and outrank competitors with Backlinks & SEO-optimized content while you sleep.", clicks: 8081, hoursAgo: 9 },
-    { name: "orynth.dev", price: 12716, desc: "Discover early-stage products, support their creators, and invest in their coins. Orynth connects builders with communities who believe in them.", clicks: 11273, hoursAgo: 10 },
-    { name: "crowdreply.io", price: 12711, desc: "Get your brand added to the pages ChatGPT, Gemini, and Perplexity already cite. CrowdReply runs the outreach. You approve placements and pay when they publish.", clicks: 5027, hoursAgo: 10 },
-    { name: "trycomp.ai", price: 10000, desc: "Automate SOC 2, ISO 27001, HIPAA, and GDPR. 580+ integrations, 1,000+ companies, audit-ready in days, with audit and pentest included.", clicks: 11651, hoursAgo: 24 },
-    { name: "winning.com", price: 3129, desc: "", clicks: 235, hoursAgo: 1 },
-    { name: "lathire.com", price: 3127, desc: "LatHire is Latin America's largest talent marketplace. Hire vetted tech and generalist professionals in as little as 24 hours, for up to 80% less.", clicks: 2767, hoursAgo: 7 },
-    { name: "contentstudio.io", price: 3126, desc: "All-in-one social media management tool backed by AI to plan, schedule, publish, and track your content across every major platform from one dashboard.", clicks: 613, hoursAgo: 7 },
-    { name: "unify.ai", price: 3125, desc: "AI teammates for everyone else. Contribute to unifyai/unify development by creating an account on GitHub.", clicks: 446, hoursAgo: 8 },
-    { name: "rankaffiliate.lol", price: 5, desc: "", clicks: 12, hoursAgo: 0.03 },
-    { name: "getwiser.ai", price: 12, desc: "", clicks: 44, hoursAgo: 0.03 },
-    { name: "oyashield.com", price: 10, desc: "", clicks: 21, hoursAgo: 0.2 },
-    { name: "vibewar.lol", price: 23, desc: "", clicks: 88, hoursAgo: 0.25 },
-  ];
-
   const GRADIENTS = [
-    ["#e8501f", "#f9a45c"], ["#2563eb", "#60a5fa"], ["#16a34a", "#86efac"],
-    ["#9333ea", "#d8b4fe"], ["#dc2626", "#fca5a5"], ["#0891b2", "#67e8f9"],
-    ["#ca8a04", "#fde047"], ["#db2777", "#f9a8d4"],
+    ["#1f6f4a", "#7fbf9e"], ["#c9a35c", "#e8d5a8"], ["#ce2b37", "#f2a3a9"],
+    ["#2563eb", "#93c5fd"], ["#0f766e", "#5eead4"], ["#7c3aed", "#c4b5fd"],
+    ["#b45309", "#fbbf24"], ["#be185d", "#f9a8d4"],
   ];
 
-  function now() { return Date.now(); }
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    const listings = SEED_LISTINGS.map((l, i) => ({
-      id: "seed-" + i,
-      name: l.name,
-      desc: l.desc,
-      price: l.price,
-      clicks: l.clicks,
-      ts: now() - l.hoursAgo * 3600 * 1000,
-    }));
-    return {
-      listings,
-      activity: listings.slice(0, 5).map(l => ({ name: l.name, rank: 0, price: l.price, ts: l.ts })),
-      visitors: 1072388,
-    };
-  }
-
-  let state = loadState();
-
-  function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-  }
-
-  function sorted() {
-    return [...state.listings].sort((a, b) => b.price - a.price);
-  }
+  let listings = [];
+  let activity = [];
+  let showAll = false;
+  let visitorBase = 0;
 
   function timeAgo(ts) {
-    const diff = Math.max(0, now() - ts);
+    const diff = Math.max(0, Date.now() - ts);
     const min = Math.floor(diff / 60000);
     if (min < 1) return "just now";
     if (min < 60) return min + " minute" + (min === 1 ? "" : "s") + " ago";
@@ -87,55 +44,69 @@
     return `<div class="avatar" style="--seed1:${c1};--seed2:${c2}; width:${size}px; height:${size}px; font-size:${size * 0.4}px">${initials(name)}</div>`;
   }
 
-  let showAll = false;
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function sorted() {
+    return [...listings].sort((a, b) => b.price - a.price);
+  }
 
   function render() {
     const list = sorted();
-    renderHero();
     renderForm(list);
     renderTrending(list);
     renderActivity();
     renderLeaderboard(list);
   }
 
-  function renderHero() {
-    document.getElementById("visitor-count").textContent = state.visitors.toLocaleString();
-  }
-
   function renderForm(list) {
     const top = list[0];
     const topPrice = top ? top.price : 0;
-    document.getElementById("target-price").textContent = (topPrice + (top ? 5 : 0)).toLocaleString();
-    document.getElementById("claim-rank-label").textContent = "#1";
+    document.getElementById("target-price").textContent = Math.ceil(topPrice + (top ? 1 : 0)).toLocaleString();
   }
 
   function renderTrending(list) {
-    const top = [...list].sort((a, b) => b.clicks - a.clicks).slice(0, 6);
     const el = document.getElementById("trending-row");
+    if (!list.length) { el.innerHTML = `<p class="text-sm" style="color:var(--muted-fg)">Nothing trending yet — be the first bid.</p>`; return; }
+    const top = [...list].sort((a, b) => b.clicks - a.clicks).slice(0, 6);
     el.innerHTML = top.map(l => `
       <div class="shrink-0 flex items-center gap-2 rounded-full px-3 py-2 border" style="border-color:var(--border); background:var(--card)">
         ${avatarHTML(l.name, 22)}
         <span class="text-sm font-medium whitespace-nowrap">${escapeHTML(l.name)}</span>
-        <span class="text-xs whitespace-nowrap" style="color:var(--muted-fg)">${(l.clicks % 700) + 40} clicks/h</span>
+        <span class="text-xs whitespace-nowrap" style="color:var(--muted-fg)">${l.clicks} clicks/h</span>
       </div>`).join("");
   }
 
   function renderActivity() {
     const el = document.getElementById("activity-list");
-    const items = [...state.activity].sort((a, b) => b.ts - a.ts).slice(0, showAll ? 50 : 5);
-    el.innerHTML = items.map(a => `
+    if (!activity.length) { el.innerHTML = `<p class="text-sm" style="color:var(--muted-fg)">No bids yet.</p>`; return; }
+    const list = sorted();
+    const items = [...activity].sort((a, b) => b.ts - a.ts).slice(0, showAll ? 50 : 5);
+    el.innerHTML = items.map(a => {
+      const rank = list.findIndex(l => l.name.toLowerCase() === a.name.toLowerCase()) + 1;
+      return `
       <div class="flex items-center gap-3 rounded-xl px-3 py-2 border fade-in" style="border-color:var(--border); background:var(--card)">
         ${avatarHTML(a.name, 28)}
         <div class="min-w-0 flex-1 truncate text-sm">
           <span class="font-medium">${escapeHTML(a.name)}</span>
-          <span style="color:var(--muted-fg)"> at #${a.rank || "?"} · $${a.price.toLocaleString()}</span>
+          <span style="color:var(--muted-fg)"> at #${rank || "?"} · €${a.price.toLocaleString()}</span>
         </div>
         <span class="text-xs shrink-0" style="color:var(--muted-fg)">${timeAgo(a.ts)}</span>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
 
   function renderLeaderboard(list) {
     const el = document.getElementById("leaderboard-list");
+    const emptyEl = document.getElementById("empty-state");
+    if (!list.length) {
+      el.innerHTML = "";
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+    emptyEl.classList.add("hidden");
+
     const items = showAll ? list : list.slice(0, 10);
     el.innerHTML = items.map((l, i) => {
       const rank = i + 1;
@@ -150,72 +121,96 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-baseline gap-2">
             <span class="min-w-0 truncate font-bold text-sm md:text-base">${escapeHTML(l.name)}</span>
-            <span class="font-mono font-semibold text-sm md:text-base shrink-0">$${l.price.toLocaleString()}</span>
+            <span class="font-mono font-semibold text-sm md:text-base shrink-0">€${l.price.toLocaleString()}</span>
           </div>
           ${l.desc ? `<div class="text-xs md:text-sm line-clamp-2" style="color:var(--muted-fg)">${escapeHTML(l.desc)}</div>` : ""}
           <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] md:text-xs" style="color:var(--muted-fg)">
             <span>${timeAgo(l.ts)}</span><span>·</span><span>${l.clicks.toLocaleString()} clicks</span>
           </div>
         </div>
-        <button data-outbid="${l.id}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
-          claim for $${(l.price + 1).toLocaleString()}
+        <button data-outbid="${escapeHTML(l.name)}" data-price="${Math.ceil(l.price) + 1}" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors" style="border-color:var(--border)">
+          claim for €${(Math.ceil(l.price) + 1).toLocaleString()}
         </button>
       </div>`;
     }).join("");
 
     el.querySelectorAll("[data-outbid]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-outbid");
-        const target = state.listings.find(l => l.id === id);
-        if (target) {
-          document.getElementById("input-amount").value = target.price + 1;
-          document.getElementById("input-url").focus();
-          document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+        document.getElementById("input-url").value = btn.getAttribute("data-outbid");
+        document.getElementById("input-amount").value = btn.getAttribute("data-price");
+        document.getElementById("input-url").focus();
+        document.getElementById("bid-form").scrollIntoView({ behavior: "smooth", block: "center" });
       });
     });
   }
 
-  function escapeHTML(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function showBanner(msg, kind) {
+    const wrap = document.getElementById("status-banner");
+    const inner = document.getElementById("status-banner-inner");
+    const colors = {
+      success: { border: "#1f6f4a", bg: "rgba(31,111,74,0.10)" },
+      info: { border: "var(--border)", bg: "var(--muted)" },
+      error: { border: "#ce2b37", bg: "rgba(206,43,55,0.08)" },
+    }[kind || "info"];
+    inner.style.borderColor = colors.border;
+    inner.style.background = colors.bg;
+    inner.textContent = msg;
+    wrap.classList.remove("hidden");
   }
 
-  function slugId() { return "u-" + Math.random().toString(36).slice(2, 10); }
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch("/api/leaderboard");
+      const data = await res.json();
+      if (data.configured === false) {
+        document.getElementById("config-banner").classList.remove("hidden");
+      }
+      listings = data.listings || [];
+      activity = data.activity || [];
+      render();
+    } catch (e) {
+      console.error("Failed to load leaderboard", e);
+    }
+  }
 
-  document.getElementById("bid-form").addEventListener("submit", function (e) {
+  document.getElementById("bid-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     const urlInput = document.getElementById("input-url");
     const descInput = document.getElementById("input-desc");
     const amountInput = document.getElementById("input-amount");
     const errEl = document.getElementById("form-error");
+    const submitBtn = document.getElementById("submit-btn");
     errEl.classList.add("hidden");
 
     const name = urlInput.value.trim();
     const desc = descInput.value.trim();
     const amount = parseInt(amountInput.value, 10);
 
-    if (!name) { showError("Enter a URL or @handle."); return; }
-    if (!amount || amount < MIN_BID) { showError(`Minimum bid is $${MIN_BID}.`); return; }
+    if (!name) return showError("Enter a URL or @handle.");
+    if (!amount || amount < 5) return showError("Minimum bid is €5.");
 
-    const existing = state.listings.find(l => l.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      if (amount <= existing.price) { showError(`Your current bid is $${existing.price}. Bid higher to move up.`); return; }
-      existing.price = amount;
-      existing.ts = now();
-      if (desc) existing.desc = desc;
-    } else {
-      state.listings.push({
-        id: slugId(), name, desc, price: amount, clicks: Math.floor(Math.random() * 20) + 1, ts: now(),
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Redirecting to Stripe…";
+
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, desc, amount }),
       });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        showError(data.error || "Could not start checkout.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Outbid";
+        return;
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      showError("Network error — try again.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Outbid";
     }
-
-    const rank = sorted().findIndex(l => l.name.toLowerCase() === name.toLowerCase()) + 1;
-    state.activity.unshift({ name, rank, price: amount, ts: now() });
-    state.activity = state.activity.slice(0, 100);
-    save();
-    render();
-
-    urlInput.value = ""; descInput.value = ""; amountInput.value = "";
 
     function showError(msg) { errEl.textContent = msg; errEl.classList.remove("hidden"); }
   });
@@ -230,22 +225,40 @@
   const root = document.documentElement;
   function applyTheme(mode) {
     if (mode === "dark") root.classList.add("dark"); else root.classList.remove("dark");
-    localStorage.setItem("outbid_theme", mode);
+    localStorage.setItem("milanocity_theme", mode);
   }
-  const savedTheme = localStorage.getItem("outbid_theme")
+  const savedTheme = localStorage.getItem("milanocity_theme")
     || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   applyTheme(savedTheme);
   document.getElementById("theme-toggle").addEventListener("click", () => {
     applyTheme(root.classList.contains("dark") ? "light" : "dark");
   });
 
-  // ambient simulation: online count + visitor ticker + fake activity
+  // handle redirect back from Stripe
+  (function handleRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paid") === "1") {
+      const name = params.get("name") || "your bid";
+      showBanner(`✅ Payment received for ${name}! It can take a few seconds to appear on the board.`, "success");
+      setTimeout(loadLeaderboard, 3000);
+    } else if (params.get("canceled") === "1") {
+      showBanner("Checkout canceled — no charge was made.", "info");
+    }
+    if (params.toString()) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  })();
+
+  // ambient simulation: cosmetic only, doesn't affect the leaderboard
+  visitorBase = 40000 + Math.floor(Math.random() * 5000);
+  document.getElementById("visitor-count").textContent = visitorBase.toLocaleString();
   setInterval(() => {
     const el = document.getElementById("online-count");
-    if (el) el.textContent = (480 + Math.floor(Math.random() * 80)).toString();
-    state.visitors += Math.floor(Math.random() * 4);
-    renderHero();
+    if (el) el.textContent = (260 + Math.floor(Math.random() * 90)).toString();
+    visitorBase += Math.floor(Math.random() * 3);
+    document.getElementById("visitor-count").textContent = visitorBase.toLocaleString();
   }, 4000);
 
-  render();
+  loadLeaderboard();
+  setInterval(loadLeaderboard, 8000);
 })();
